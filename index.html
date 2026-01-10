@@ -114,7 +114,8 @@
                         <div class="form-group">
                             <label for="establecimiento">Establecimiento / Centro:</label>
                             <div class="autocomplete-wrapper">
-                                <input type="text" id="establecimiento" placeholder="Selecciona o escribe para buscar un establecimiento" required autocomplete="off"/>
+                                <input type="text" id="establecimiento" placeholder="Selecciona o escribe para buscar un establecimiento" required autocomplete="off" list="establecimientosLista" />
+                                <datalist id="establecimientosLista"></datalist>
                                 <div id="sugerenciasEstablecimientosMain" class="sugerencias-list"></div>
                             </div>
                         </div>

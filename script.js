@@ -195,160 +195,49 @@ function establecerFechaHoy() {
 
 // Cargar catálogo desde el archivo Excel de SISMED
 async function cargarCatalogoDesdeExcel() {
-    
     try {
-        // Intentar cargar desde la ruta relativa
-        let archivoExcel = "../SISMED/CAPACIDAD.xlsx";
-        
-        console.log("Intentando cargar Excel desde:", archivoExcel);
-        
-        let response = await fetch(archivoExcel);
-        
-        // Si falla, intentar con ruta absoluta
+        // Cargar desde el archivo JSON proporcionado
+        const response = await fetch('catalogo_establecimientos.json');
         if (!response.ok) {
-            console.warn("No se encontró en ruta relativa, intentando alternativa...");
-            archivoExcel = "../../SISMED/CAPACIDAD.xlsx";
-            response = await fetch(archivoExcel);
+            throw new Error('No se pudo cargar catalogo_establecimientos.json');
         }
-        
-        if (!response.ok) {
-            throw new Error(`HTTP error! status: ${response.status}, archivo: ${archivoExcel}`);
+        const data = await response.json();
+        // Estructura: { redes: [ { nombre, establecimientos: [ { cod_pre, nombre } ] } ] }
+        if (!data.redes || !Array.isArray(data.redes)) {
+            throw new Error('Estructura de catálogo inválida');
         }
-        
-        const data = await response.arrayBuffer();
-        console.log("Excel cargado exitosamente, tamaño:", data.byteLength, "bytes");
-
-        // Usar XLSX para leer el archivo
-        if (typeof XLSX === 'undefined') {
-            console.error('XLSX no está cargado');
-            cargarCatalogoPorDefecto();
-            return;
+        // Adaptar a la estructura interna esperada
+        CATALOGO_ESTABLECIMIENTOS.redes = data.redes.map(red => ({
+            nombre: red.nombre,
+            establecimientos: red.establecimientos.map(e => e.nombre)
+        }));
+        CATALOGO_ESTABLECIMIENTOS.datos_raw = data.redes;
+        // Mostrar cantidad en el status
+        const statusEl = document.getElementById('establecimientosStatus');
+        if (statusEl) {
+            const total = data.redes.reduce((acc, r) => acc + r.establecimientos.length, 0);
+            statusEl.textContent = `Catálogo cargado: ${total} establecimientos`;
+            statusEl.style.color = '#28a745';
         }
-
-        const workbook = XLSX.read(data, { type: "array" });
-        const sheet = workbook.Sheets[workbook.SheetNames[0]];
-        const jsonData = XLSX.utils.sheet_to_json(sheet, { header: 1 });
-
-        console.log("Datos cargados del Excel - Total filas:", jsonData.length);
-        console.log("Primeras 5 filas:", jsonData.slice(0, 5));
-
-        // Buscar encabezados - ser más flexible
-        let headerIndex = -1;
-        for (let i = 0; i < Math.min(jsonData.length, 20); i++) {
-            const row = jsonData[i];
-            if (Array.isArray(row) && row.length > 0) {
-                const rowStr = row.map(c => c?.toString().toUpperCase().trim() || '').join('|');
-                console.log(`Fila ${i}: ${rowStr}`);
-                if (rowStr.includes('RED') || rowStr.includes('ESTABLECIMIENTO') || rowStr.includes('REDES') || rowStr.includes('CENTROS')) {
-                    headerIndex = i;
-                    console.log("✓ Header encontrado en fila:", i);
-                    break;
-                }
-            }
+        // Llenar datalist de establecimientos
+        const datalist = document.getElementById('establecimientosLista');
+        if (datalist) {
+            datalist.innerHTML = '';
+            data.redes.forEach(red => {
+                red.establecimientos.forEach(est => {
+                    // Mostrar nombre y código si existe
+                    const nombre = est.nombre || est;
+                    const cod = est.cod_pre ? ` (${est.cod_pre})` : '';
+                    const option = document.createElement('option');
+                    option.value = nombre + cod;
+                    datalist.appendChild(option);
+                });
+            });
         }
-
-        if (headerIndex === -1) {
-            console.warn("No se encontraron encabezados en Excel, usando catálogo por defecto");
-            cargarCatalogoPorDefecto();
-            return;
-        }
-
-        const headers = jsonData[headerIndex].map(h => h?.toString().trim() || "");
-        console.log("Headers encontrados:", headers);
-        
-        const rows = jsonData.slice(headerIndex + 1);
-        console.log("Total de filas de datos:", rows.length);
-
-        // Guardar datos raw
-        CATALOGO_ESTABLECIMIENTOS.datos_raw = rows;
-
-        // Procesar datos para crear estructura de redes y establecimientos
-        const redesMap = {};
-        const medicamentosSet = new Set();
-
-        // Buscar índices de forma más flexible
-        let redIndex = -1;
-        let estIndex = -1;
-        let codIndex = -1;
-        let descIndex = -1;
-        
-        for (let i = 0; i < headers.length; i++) {
-            const headerUpper = headers[i].toUpperCase();
-            console.log(`Columna ${i}: "${headers[i]}" -> "${headerUpper}"`);
-            
-            if ((headerUpper.includes('RED') && !headerUpper.includes('EDUC')) || headerUpper.includes('REDES')) {
-                redIndex = i;
-                console.log("✓ RED encontrado en columna:", i);
-            }
-            if (headerUpper.includes('ESTABLECIMIENTO') || headerUpper.includes('CENTROS') || headerUpper.includes('CENTRO')) {
-                estIndex = i;
-                console.log("✓ ESTABLECIMIENTO encontrado en columna:", i);
-            }
-            if (headerUpper.includes('CODIGO') || headerUpper.includes('COD') || headerUpper.includes('PRODUCTO')) {
-                codIndex = i;
-                console.log("✓ CODIGO encontrado en columna:", i);
-            }
-            if (headerUpper.includes('DESCRIPCION') || headerUpper.includes('DESC') || headerUpper.includes('MEDICAMENTO')) {
-                descIndex = i;
-                console.log("✓ DESCRIPCION encontrado en columna:", i);
-            }
-        }
-
-        console.log("Índices encontrados - Red:", redIndex, "Est:", estIndex, "Cod:", codIndex, "Desc:", descIndex);
-
-        if (redIndex === -1 || estIndex === -1) {
-            console.warn("No se encontraron columnas de RED o ESTABLECIMIENTO");
-            cargarCatalogoPorDefecto();
-            return;
-        }
-
-        rows.forEach((row, idx) => {
-            if (!Array.isArray(row)) return;
-
-            const red = row[redIndex]?.toString().trim();
-            const establecimiento = row[estIndex]?.toString().trim();
-
-            if (red && establecimiento && red !== "" && establecimiento !== "") {
-                if (!redesMap[red]) {
-                    redesMap[red] = [];
-                }
-                if (!redesMap[red].includes(establecimiento)) {
-                    redesMap[red].push(establecimiento);
-                }
-            }
-
-            // Extraer medicamentos
-            if (codIndex !== -1 && descIndex !== -1) {
-                const codigo = row[codIndex]?.toString().trim();
-                const descripcion = row[descIndex]?.toString().trim();
-                
-                if (codigo && descripcion && codigo !== "" && descripcion !== "") {
-                    medicamentosSet.add(JSON.stringify({ codigo, descripcion }));
-                }
-            }
-        });
-
-        console.log("✓ Redes encontradas:", Object.keys(redesMap));
-        console.log("✓ Total establecimientos:", Object.values(redesMap).reduce((sum, est) => sum + est.length, 0));
-
-        // Convertir medicamentos a array
-        CATALOGO_MEDICAMENTOS.todos = Array.from(medicamentosSet).map(item => JSON.parse(item));
-        CATALOGO_MEDICAMENTOS.unicos = [...new Map(CATALOGO_MEDICAMENTOS.todos.map(med => [med.descripcion, med])).values()];
-
-        console.log("✓ Medicamentos cargados:", CATALOGO_MEDICAMENTOS.unicos.length);
-
-        // Convertir map a array
-        CATALOGO_ESTABLECIMIENTOS.redes = Object.entries(redesMap).map(([nombre, establecimientos]) => ({
-            nombre,
-            establecimientos: establecimientos.sort()
-        })).sort((a, b) => a.nombre.localeCompare(b.nombre));
-
-        console.log("✓ Estructura final:", CATALOGO_ESTABLECIMIENTOS.redes);
-
         // Cargar selectores con datos
         cargarCatalogo();
     } catch (error) {
-        console.error("❌ Error cargando Excel:", error.message, error);
+        console.error('❌ Error cargando catálogo de establecimientos:', error.message, error);
         cargarCatalogoPorDefecto();
     }
 }
