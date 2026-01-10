@@ -107,13 +107,15 @@
                             <select id="red" required onchange="actualizarEstablecimientos()">
                                 <option value="">-- Selecciona una RED --</option>
                             </select>
+                            <div id="establecimientosStatus" class="catalogo-status">Cargando catálogo de establecimientos...</div>
                         </div>
 
                         <div class="form-group">
                             <label for="establecimiento">Establecimiento / Centro:</label>
-                            <select id="establecimiento" required>
-                                <option value="">-- Primero selecciona una RED --</option>
-                            </select>
+                            <div class="autocomplete-wrapper">
+                                <input type="text" id="establecimiento" placeholder="Selecciona o escribe para buscar un establecimiento" required autocomplete="off"/>
+                                <div id="sugerenciasEstablecimientosMain" class="sugerencias-list"></div>
+                            </div>
                         </div>
                     </div>
 
@@ -294,6 +296,10 @@
                             </div>
 
                             <div class="form-group">
+                                <label for="newRed">Red / Unidad:</label>
+                                <select id="newRed">
+                                    <option value="">-- Selecciona una RED --</option>
+                                </select>
                                 <label for="newCentro">Centro/Establecimiento:</label>
                                 <input 
                                     type="text" 
@@ -363,6 +369,10 @@
                             </div>
 
                             <div class="form-group">
+                                <label for="editRed">Red / Unidad:</label>
+                                <select id="editRed">
+                                    <option value="">-- Selecciona una RED --</option>
+                                </select>
                                 <label for="editCentro">Centro/Establecimiento:</label>
                                 <input 
                                     type="text" 

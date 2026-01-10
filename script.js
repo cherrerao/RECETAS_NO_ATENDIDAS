@@ -708,6 +708,40 @@ function cargarCatalogo() {
     });
     
     console.log("Total de opciones en select:", selectRed.options.length);
+
+    // Actualizar estado visible con total de establecimientos
+    const totalEstablecimientos = CATALOGO_ESTABLECIMIENTOS.redes.reduce((sum, r) => sum + (Array.isArray(r.establecimientos) ? r.establecimientos.length : 0), 0);
+    window.ESTABLECIMIENTOS_TOTAL = totalEstablecimientos;
+    const statusEl = document.getElementById('establecimientosStatus');
+    if (statusEl) {
+        statusEl.textContent = `Catálogo cargado: ${totalEstablecimientos} establecimientos`;
+        statusEl.style.color = '#28a745';
+    }
+
+    // También poblar selects de admin (crear/editar usuario) si existen
+    const newRed = document.getElementById('newRed');
+    const editRed = document.getElementById('editRed');
+    if (newRed) {
+        // limpiar
+        while (newRed.options.length > 1) newRed.remove(1);
+        CATALOGO_ESTABLECIMIENTOS.redes.forEach(red => {
+            const opt = document.createElement('option');
+            opt.value = red.nombre;
+            opt.textContent = red.nombre;
+            newRed.appendChild(opt);
+        });
+        newRed.addEventListener('change', () => actualizarEstablecimientosAdmin('new'));
+    }
+    if (editRed) {
+        while (editRed.options.length > 1) editRed.remove(1);
+        CATALOGO_ESTABLECIMIENTOS.redes.forEach(red => {
+            const opt = document.createElement('option');
+            opt.value = red.nombre;
+            opt.textContent = red.nombre;
+            editRed.appendChild(opt);
+        });
+        editRed.addEventListener('change', () => actualizarEstablecimientosAdmin('edit'));
+    }
 }
 
 // Filtrar y mostrar sugerencias de productos (con debounce)
@@ -898,28 +932,148 @@ function mostrarTodosTiposServicio() {
 // Actualizar establecimientos según red seleccionada
 function actualizarEstablecimientos() {
     const redSeleccionada = document.getElementById('red').value;
-    const selectEstablecimiento = document.getElementById('establecimiento');
-    
-    // Limpiar opciones previas
-    selectEstablecimiento.innerHTML = '<option value="">-- Selecciona un Establecimiento --</option>';
-    
-    if (!redSeleccionada) {
-        selectEstablecimiento.innerHTML = '<option value="">-- Primero selecciona una RED --</option>';
-        selectEstablecimiento.disabled = true;
-        return;
-    }
-    
-    // Buscar establecimientos de la red seleccionada
+    // Soportar tanto <select> como <input> en el DOM para el campo establecimiento
+    const elEst = document.getElementById('establecimiento');
+    const sugerenciasMain = document.getElementById('sugerenciasEstablecimientosMain');
+
+    // Si no hay elemento, salir
+    if (!elEst) return;
+
+    // Obtener la red si existe
     const red = CATALOGO_ESTABLECIMIENTOS.redes.find(r => r.nombre === redSeleccionada);
-    
-    if (red) {
+
+    // Guardar lista actual de establecimientos por red para uso en autocompletado
+    if (red && Array.isArray(red.establecimientos)) {
+        window.ESTABLECIMIENTOS_POR_RED = red.establecimientos.slice();
+    } else {
+        window.ESTABLECIMIENTOS_POR_RED = [];
+    }
+
+    // Si el campo es un <select>, poblar opciones (compatibilidad retro)
+    if (elEst.tagName.toLowerCase() === 'select') {
+        const selectEstablecimiento = elEst;
+        // Limpiar opciones previas
+        while (selectEstablecimiento.options.length > 0) selectEstablecimiento.remove(0);
+        if (!redSeleccionada) {
+            const opt = document.createElement('option');
+            opt.value = '';
+            opt.textContent = '-- Primero selecciona una RED --';
+            selectEstablecimiento.appendChild(opt);
+            selectEstablecimiento.disabled = true;
+            return;
+        }
         selectEstablecimiento.disabled = false;
-        red.establecimientos.forEach(establecimiento => {
+        window.ESTABLECIMIENTOS_POR_RED.forEach(establecimiento => {
             const option = document.createElement('option');
             option.value = establecimiento;
             option.textContent = establecimiento;
             selectEstablecimiento.appendChild(option);
         });
+        return;
+    }
+
+    // Si es input (nuevo comportamiento): activar el campo y mostrar placeholder
+    if (elEst.tagName.toLowerCase() === 'input') {
+        // Si no hay red seleccionada, deshabilitar entrada
+        if (!redSeleccionada) {
+            elEst.value = '';
+            elEst.disabled = true;
+            elEst.placeholder = 'Selecciona primero una RED';
+            if (sugerenciasMain) {
+                sugerenciasMain.innerHTML = '<div class="sugerencia-item" style="color:#999;">Primero selecciona una RED</div>';
+                sugerenciasMain.classList.remove('active');
+            }
+        } else {
+            elEst.disabled = false;
+            elEst.placeholder = 'Escribe para buscar dentro de la red seleccionada';
+            if (sugerenciasMain) {
+                sugerenciasMain.innerHTML = '';
+                sugerenciasMain.classList.remove('active');
+            }
+        }
+        // Actualizar estado con conteo por red
+        const statusEl = document.getElementById('establecimientosStatus');
+        if (statusEl) {
+            const totalPorRed = (window.ESTABLECIMIENTOS_POR_RED && window.ESTABLECIMIENTOS_POR_RED.length) || 0;
+            if (redSeleccionada) {
+                statusEl.textContent = `${redSeleccionada}: ${totalPorRed} establecimientos (total: ${window.ESTABLECIMIENTOS_TOTAL || 0})`;
+            } else {
+                statusEl.textContent = `Catálogo cargado: ${window.ESTABLECIMIENTOS_TOTAL || 0} establecimientos`;
+            }
+        }
+    }
+}
+
+// Filtrar y mostrar sugerencias para el campo establecimiento principal
+function filtrarEstablecimientosMain() {
+    const input = document.getElementById('establecimiento');
+    const sugerenciasDiv = document.getElementById('sugerenciasEstablecimientosMain');
+
+    if (!input || !sugerenciasDiv) return;
+
+    const busqueda = input.value.toLowerCase().trim();
+
+    // Si no hay red seleccionada, ofrecer todos los establecimientos del catálogo
+    let lista = [];
+    if (window.ESTABLECIMIENTOS_POR_RED && window.ESTABLECIMIENTOS_POR_RED.length > 0) {
+        lista = window.ESTABLECIMIENTOS_POR_RED;
+    } else {
+        lista = obtenerTodosLosEstablecimientos();
+    }
+
+    if (busqueda.length < 1) {
+        sugerenciasDiv.innerHTML = '';
+        sugerenciasDiv.classList.remove('active');
+        return;
+    }
+
+    const resultados = lista.filter(e => e.toLowerCase().includes(busqueda)).slice(0, 20);
+    if (resultados.length === 0) {
+        sugerenciasDiv.innerHTML = '<div class="sugerencia-item" style="color: #999;">No se encontraron establecimientos</div>';
+        sugerenciasDiv.classList.add('active');
+        return;
+    }
+
+    sugerenciasDiv.innerHTML = resultados.map(est => `
+        <div class="sugerencia-item" onclick="seleccionarEstablecimientoMain('${est.replace(/'/g, "\\'")}')">
+            <div class="sugerencia-descripcion">🏥 ${est}</div>
+        </div>
+    `).join('');
+    sugerenciasDiv.classList.add('active');
+}
+
+function mostrarTodosEstablecimientosMain() {
+    const input = document.getElementById('establecimiento');
+    const sugerenciasDiv = document.getElementById('sugerenciasEstablecimientosMain');
+    if (!input || !sugerenciasDiv) return;
+
+    let lista = [];
+    if (window.ESTABLECIMIENTOS_POR_RED && window.ESTABLECIMIENTOS_POR_RED.length > 0) {
+        lista = window.ESTABLECIMIENTOS_POR_RED;
+    } else {
+        lista = obtenerTodosLosEstablecimientos();
+    }
+
+    sugerenciasDiv.innerHTML = lista.slice(0, 50).map(est => `
+        <div class="sugerencia-item" onclick="seleccionarEstablecimientoMain('${est.replace(/'/g, "\\'")}')">
+            <div class="sugerencia-descripcion">🏥 ${est}</div>
+        </div>
+    `).join('');
+    sugerenciasDiv.classList.add('active');
+}
+
+function seleccionarEstablecimientoMain(establecimiento) {
+    const input = document.getElementById('establecimiento');
+    const sugerenciasDiv = document.getElementById('sugerenciasEstablecimientosMain');
+    const redSeleccionada = document.getElementById('red')?.value || '';
+    if (!redSeleccionada) {
+        mostrarNotificacion('Debes seleccionar primero una RED', 'warning');
+        return;
+    }
+    if (input) input.value = establecimiento;
+    if (sugerenciasDiv) {
+        sugerenciasDiv.classList.remove('active');
+        sugerenciasDiv.innerHTML = '';
     }
 }
 
@@ -966,6 +1120,20 @@ function agregarEventListeners() {
             !event.target.closest('.autocomplete-wrapper') &&
             !event.target.closest('.sugerencias-list')) {
             sugerenciasDiv.classList.remove('active');
+        }
+    });
+    
+    // Autocomplete para ESTABLECIMIENTO en formulario principal
+    const establecimientoInput = document.getElementById('establecimiento');
+    const sugerenciasMain = document.getElementById('sugerenciasEstablecimientosMain');
+    if (establecimientoInput) {
+        establecimientoInput.addEventListener('keyup', filtrarEstablecimientosMain);
+        establecimientoInput.addEventListener('focus', mostrarTodosEstablecimientosMain);
+    }
+    // Cerrar sugerencias de establecimiento si se hace click fuera
+    document.addEventListener('click', function(event) {
+        if (sugerenciasMain && establecimientoInput && !event.target.closest('#establecimiento') && !event.target.closest('#sugerenciasEstablecimientosMain')) {
+            sugerenciasMain.classList.remove('active');
         }
     });
     
@@ -2080,6 +2248,22 @@ function mostrarAplicacion() {
     if (editCentro) {
         editCentro.addEventListener('keyup', filtrarEstablecimientosEditarAdmin);
     }
+
+    // Inicializar estado de inputs admin: deshabilitar hasta que se seleccione una RED
+    const newRed = DOMCache.get('newRed');
+    const editRed = DOMCache.get('editRed');
+    if (newRed) {
+        newRed.addEventListener('change', () => actualizarEstablecimientosAdmin('new'));
+        if (!newRed.value) {
+            if (newCentro) newCentro.disabled = true;
+        }
+    }
+    if (editRed) {
+        editRed.addEventListener('change', () => actualizarEstablecimientosAdmin('edit'));
+        if (!editRed.value) {
+            if (editCentro) editCentro.disabled = true;
+        }
+    }
 }
 
 // Actualizar información del usuario en navbar
@@ -2304,13 +2488,18 @@ function filtrarEstablecimientosAdmin() {
         return;
     }
 
-    // Obtener todos los establecimientos
-    const todosEstablecimientos = obtenerTodosLosEstablecimientos();
-    
+    // Obtener establecimientos según la red seleccionada en el formulario de creación
+    const selectedRed = document.getElementById('newRed') ? document.getElementById('newRed').value : '';
+    let todosEstablecimientos = [];
+    if (selectedRed) {
+        const redObj = CATALOGO_ESTABLECIMIENTOS.redes.find(r => r.nombre === selectedRed);
+        todosEstablecimientos = redObj && Array.isArray(redObj.establecimientos) ? redObj.establecimientos : [];
+    } else {
+        todosEstablecimientos = obtenerTodosLosEstablecimientos();
+    }
+
     // Filtrar establecimientos que coincidan con la búsqueda
-    const resultados = todosEstablecimientos.filter(est => {
-        return est.toLowerCase().includes(busqueda);
-    }).slice(0, 20); // Limitar a 20 resultados
+    const resultados = todosEstablecimientos.filter(est => est.toLowerCase().includes(busqueda)).slice(0, 20);
 
     if (resultados.length === 0) {
         sugerenciasDiv.innerHTML = '<div class="sugerencia-item" style="color: #999;">No se encontraron establecimientos</div>';
@@ -2339,6 +2528,45 @@ function seleccionarEstablecimiento(establecimiento) {
     document.getElementById('sugerenciasEstablecimientos').classList.remove('active');
     document.getElementById('sugerenciasEstablecimientos').innerHTML = '';
     document.getElementById('establecimientosList').innerHTML = '';
+}
+
+// Actualizar datalist y estado cuando se selecciona una RED en admin (crear/editar)
+function actualizarEstablecimientosAdmin(mode) {
+    // mode: 'new' or 'edit'
+    const redSelect = document.getElementById(mode === 'edit' ? 'editRed' : 'newRed');
+    const inputCentro = document.getElementById(mode === 'edit' ? 'editCentro' : 'newCentro');
+    const datalistId = mode === 'edit' ? 'establecimientosListEditar' : 'establecimientosList';
+    const datalist = document.getElementById(datalistId);
+    const sugerenciasId = mode === 'edit' ? 'sugerenciasEstablecimientosEditar' : 'sugerenciasEstablecimientos';
+    const sugerenciasDiv = document.getElementById(sugerenciasId);
+
+    if (!redSelect) return;
+
+    const selectedRed = redSelect.value;
+    let lista = [];
+    if (selectedRed) {
+        const redObj = CATALOGO_ESTABLECIMIENTOS.redes.find(r => r.nombre === selectedRed);
+        lista = redObj && Array.isArray(redObj.establecimientos) ? redObj.establecimientos : [];
+    } else {
+        lista = obtenerTodosLosEstablecimientos();
+    }
+
+    // Poblar datalist
+    if (datalist) {
+        datalist.innerHTML = lista.map(est => `<option value="${est}"></option>`).join('');
+    }
+
+    // Reset input and sugerencias
+    if (inputCentro) {
+        inputCentro.value = '';
+        inputCentro.disabled = !selectedRed ? true : false;
+        inputCentro.placeholder = selectedRed ? 'Escribe para buscar dentro de la red seleccionada' : 'Selecciona primero una RED';
+    }
+
+    if (sugerenciasDiv) {
+        sugerenciasDiv.innerHTML = '';
+        sugerenciasDiv.classList.remove('active');
+    }
 }
 
 // Cargar lista de usuarios
@@ -2534,7 +2762,14 @@ function filtrarEstablecimientosEditarAdmin() {
     if (!inputCentro || !sugerencias) return;
     
     const valor = inputCentro.value.toLowerCase().trim();
-    const todosEstablecimientos = obtenerTodosLosEstablecimientos();
+    const selectedRed = document.getElementById('editRed') ? document.getElementById('editRed').value : '';
+    let todosEstablecimientos = [];
+    if (selectedRed) {
+        const redObj = CATALOGO_ESTABLECIMIENTOS.redes.find(r => r.nombre === selectedRed);
+        todosEstablecimientos = redObj && Array.isArray(redObj.establecimientos) ? redObj.establecimientos : [];
+    } else {
+        todosEstablecimientos = obtenerTodosLosEstablecimientos();
+    }
     
     if (valor.length === 0) {
         sugerencias.innerHTML = '';
