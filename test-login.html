@@ -1,0 +1,176 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TEST DE LOGIN - Recetas No Atendidas</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background: #f5f5f5;
+            padding: 20px;
+        }
+        .container {
+            max-width: 600px;
+            margin: 0 auto;
+            background: white;
+            padding: 30px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        h1 {
+            color: #333;
+            border-bottom: 3px solid #667eea;
+            padding-bottom: 10px;
+        }
+        .button-group {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+            margin: 20px 0;
+        }
+        button {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: bold;
+        }
+        .btn-primary {
+            background: #667eea;
+            color: white;
+        }
+        .btn-primary:hover {
+            background: #5568d3;
+        }
+        .btn-danger {
+            background: #dc3545;
+            color: white;
+        }
+        .btn-danger:hover {
+            background: #c82333;
+        }
+        .btn-success {
+            background: #28a745;
+            color: white;
+        }
+        .btn-success:hover {
+            background: #218838;
+        }
+        .output {
+            background: #f8f9fa;
+            border: 1px solid #dee2e6;
+            border-radius: 5px;
+            padding: 15px;
+            margin: 20px 0;
+            font-family: 'Courier New', monospace;
+            font-size: 12px;
+            max-height: 400px;
+            overflow-y: auto;
+            white-space: pre-wrap;
+            word-wrap: break-word;
+        }
+        .info-box {
+            background: #d1ecf1;
+            border-left: 4px solid #0c5460;
+            padding: 15px;
+            margin: 15px 0;
+            border-radius: 4px;
+        }
+        .info-box strong {
+            color: #0c5460;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔐 TEST DE LOGIN</h1>
+        
+        <div class="info-box">
+            <strong>ℹ️ Instrucciones:</strong><br>
+            1. Haz clic en "Limpiar localStorage"<br>
+            2. Luego en "Inicializar Admin"<br>
+            3. Finalmente intenta "Hacer Login"<br>
+            4. Abre la consola (F12) para ver detalles
+        </div>
+
+        <div class="button-group">
+            <button class="btn-danger" onclick="limpiarLS()">🗑️ Limpiar localStorage</button>
+            <button class="btn-primary" onclick="inicializarAdmin()">⚙️ Inicializar Admin</button>
+            <button class="btn-success" onclick="probarLogin()">🔑 Hacer Login</button>
+            <button class="btn-primary" onclick="mostrarUsuarios()">👥 Ver Usuarios</button>
+        </div>
+
+        <div class="output" id="output">Aquí aparecerá la salida...</div>
+    </div>
+
+    <script src="auth.js"></script>
+    <script>
+        // Referencia al output
+        const output = document.getElementById('output');
+
+        // Interceptar console.log
+        const originalLog = console.log;
+        console.log = function(...args) {
+            originalLog.apply(console, args);
+            output.textContent += args.join(' ') + '\n';
+            output.scrollTop = output.scrollHeight;
+        };
+
+        console.log = function(...args) {
+            originalLog.apply(console, args);
+            output.textContent += args.join(' ') + '\n';
+            output.scrollTop = output.scrollHeight;
+        };
+
+        function limpiarLS() {
+            output.textContent = '';
+            console.log('🗑️  Limpiando localStorage...');
+            localStorage.removeItem('recetas_auth_users');
+            localStorage.removeItem('recetas_sesion_actual');
+            console.log('✓ localStorage limpiado');
+            console.log('Contenido:', localStorage.getItem('recetas_auth_users'));
+        }
+
+        function inicializarAdmin() {
+            output.textContent = '';
+            console.log('⚙️  Inicializando admin...');
+            auth.resetearSistema();
+            setTimeout(() => {
+                const usuarios = auth.obtenerTodosLosUsuarios();
+                console.log('Usuarios después de inicializar:');
+                console.log(JSON.stringify(usuarios, null, 2));
+            }, 500);
+        }
+
+        function probarLogin() {
+            output.textContent = '';
+            console.log('🔑 Intentando login...');
+            try {
+                const resultado = auth.login('admin', 'admin123');
+                console.log('✓✓✓ LOGIN EXITOSO');
+                console.log('Usuario autenticado:', JSON.stringify(resultado, null, 2));
+            } catch (error) {
+                console.log('✗ LOGIN FALLIDO');
+                console.log('Error:', error.message);
+            }
+        }
+
+        function mostrarUsuarios() {
+            output.textContent = '';
+            console.log('👥 Usuarios registrados:');
+            const usuarios = auth.obtenerTodosLosUsuarios();
+            console.log(JSON.stringify(usuarios, null, 2));
+        }
+
+        // Inicializar al cargar la página
+        window.addEventListener('load', () => {
+            output.textContent = '';
+            console.log('✓ Página cargada');
+            console.log('Sistema de autenticación listo');
+            console.log('Haz clic en los botones de arriba para probar');
+        });
+    </script>
+</body>
+</html>

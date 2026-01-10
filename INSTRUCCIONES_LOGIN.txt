@@ -1,0 +1,89 @@
+=====================================
+INSTRUCCIONES PARA INGRESAR AL SISTEMA
+=====================================
+
+SOLUCIÓN RÁPIDA (RECOMENDADO):
+==============================
+
+1. Abre la página principal:
+   file:///e:/ARCHIVO_C_R/INFORMACION_CRISTHIAN/JAVASCRIPT/RECETAS_NO_ATENDIDAS/index.html
+
+2. Presiona F12 para abrir Developer Tools (Consola)
+
+3. Copia y pega esto en la consola:
+   
+   localStorage.clear(); location.reload();
+
+4. Una vez que se recargue, intenta login:
+   Usuario: admin
+   Contraseña: admin123
+
+5. Si ves un error en la consola, cópialo y muéstramelo
+
+
+OPCIÓN B: Usar archivo de test
+===============================
+
+1. Abre este archivo en el navegador:
+   file:///e:/ARCHIVO_C_R/INFORMACION_CRISTHIAN/JAVASCRIPT/RECETAS_NO_ATENDIDAS/test-login.html
+
+2. Haz clic en los botones en este orden:
+   - "🗑️ Limpiar localStorage"
+   - "⚙️ Inicializar Admin"
+   - "🔑 Hacer Login"
+   - "👥 Ver Usuarios"
+
+3. La salida aparecerá en la pantalla y en la consola (F12)
+
+
+INFORMACIÓN DE DEBUG
+====================
+
+El sistema ahora muestra información detallada en la consola:
+- Hash de la contraseña ingresada
+- Usuarios en la base de datos
+- Comparación de credenciales
+- Si el login fue exitoso o no
+
+Credenciales por defecto:
+   Usuario: admin
+   Contraseña: admin123
+   Rol: Administrador
+
+
+POSIBLES PROBLEMAS Y SOLUCIONES
+================================
+
+1. "Usuario o contraseña incorrectos"
+   → Limpia el localStorage: localStorage.clear()
+   → Recarga la página
+   → El admin se recreará automáticamente
+
+2. No ves el botón de "Resetear Sistema"
+   → Abre la consola (F12)
+   → Ejecuta: auth.resetearSistema()
+   → Recarga la página
+
+3. ¿Aún no funciona?
+   → Ve a test-login.html para un test más simple
+   → Abre la consola (F12) 
+   → Haz clic en los botones de prueba
+
+
+COMANDOS ÚTILES EN LA CONSOLA
+=============================
+
+// Ver todos los usuarios
+auth.obtenerTodosLosUsuarios()
+
+// Ver el hash de una contraseña
+auth.hashearContraseña('admin123')
+
+// Intentar login
+auth.login('admin', 'admin123')
+
+// Limpiar todo
+localStorage.clear(); auth.inicializarAdmin();
+
+=====================================
+

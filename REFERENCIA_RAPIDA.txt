@@ -1,0 +1,196 @@
+╔══════════════════════════════════════════════════════════════╗
+║      REFERENCIA RÁPIDA: USUARIOS Y PERMISOS                  ║
+╚══════════════════════════════════════════════════════════════╝
+
+
+┌──────────────────────────────────────────────────────────────┐
+│ 1. ADMIN CREA LOS USUARIOS                                   │
+└──────────────────────────────────────────────────────────────┘
+
+📱 PASO 1: Login como ADMIN
+   Usuario: admin
+   Contraseña: admin123
+
+📱 PASO 2: Click en "⚙️ Gestión de Usuarios"
+
+📱 PASO 3: Crear usuario para BELLAVISTA
+   Nombre de Usuario: bellavista
+   Contraseña: pass123
+   Rol: Usuario (Centro)
+   Centro: Centro de Salud Bellavista
+   → Crear Usuario
+
+📱 PASO 4: Crear usuario para CARMEN
+   Nombre de Usuario: carmen
+   Contraseña: pass456
+   Rol: Usuario (Centro)
+   Centro: Centro de Salud Carmen de la Legua
+   → Crear Usuario
+
+📱 PASO 5: Crear usuario para CALLAO
+   Nombre de Usuario: callao
+   Contraseña: pass789
+   Rol: Usuario (Centro)
+   Centro: Centro de Salud Callao
+   → Crear Usuario
+
+📱 PASO 6: Ver "Lista de Usuarios"
+   Deberías ver los 3 usuarios creados
+
+
+┌──────────────────────────────────────────────────────────────┐
+│ 2. CADA CENTRO INGRESA CON SU USUARIO                        │
+└──────────────────────────────────────────────────────────────┘
+
+BELLAVISTA INGRESA:
+   Usuario: bellavista
+   Contraseña: pass123
+   → Ve SOLO datos de Bellavista
+
+CARMEN INGRESA:
+   Usuario: carmen
+   Contraseña: pass456
+   → Ve SOLO datos de Carmen
+
+CALLAO INGRESA:
+   Usuario: callao
+   Contraseña: pass789
+   → Ve SOLO datos de Callao
+
+
+┌──────────────────────────────────────────────────────────────┐
+│ 3. LO QUE VE CADA USUARIO                                    │
+└──────────────────────────────────────────────────────────────┘
+
+BELLAVISTA VE:
+✓ Nombre: bellavista
+✓ Rol: 🏥 Usuario de Centro
+✓ Centro: Centro de Salud Bellavista
+✓ Red: DESHABILITADA (gris)
+✓ Establecimiento: SOLO "Centro de Salud Bellavista"
+✓ SOLO registros de Bellavista
+✓ SOLO estadísticas de Bellavista
+✗ NO ve otros centros
+✗ NO tiene botón "⚙️ Gestión de Usuarios"
+
+CARMEN VE:
+✓ Nombre: carmen
+✓ Rol: 🏥 Usuario de Centro
+✓ Centro: Centro de Salud Carmen de la Legua
+✓ Red: DESHABILITADA (gris)
+✓ Establecimiento: SOLO "Centro de Salud Carmen de la Legua"
+✓ SOLO registros de Carmen
+✓ SOLO estadísticas de Carmen
+✗ NO ve otros centros
+✗ NO tiene botón "⚙️ Gestión de Usuarios"
+
+CALLAO VE:
+✓ Nombre: callao
+✓ Rol: 🏥 Usuario de Centro
+✓ Centro: Centro de Salud Callao
+✓ Red: DESHABILITADA (gris)
+✓ Establecimiento: SOLO "Centro de Salud Callao"
+✓ SOLO registros de Callao
+✓ SOLO estadísticas de Callao
+✗ NO ve otros centros
+✗ NO tiene botón "⚙️ Gestión de Usuarios"
+
+
+┌──────────────────────────────────────────────────────────────┐
+│ 4. LO QUE VE EL ADMIN                                        │
+└──────────────────────────────────────────────────────────────┘
+
+ADMIN VE:
+✓ Nombre: admin
+✓ Rol: 👨‍💼 Administrador
+✓ Centro: ADMINISTRACIÓN
+✓ TODOS los centros
+✓ TODOS los registros
+✓ Datos combinados de todos
+✓ Botón "⚙️ Gestión de Usuarios" VISIBLE
+✓ Puede crear usuarios
+✓ Puede eliminar usuarios
+✓ Puede ver estadísticas globales
+
+
+┌──────────────────────────────────────────────────────────────┐
+│ 5. REGISTRO DE RECETAS DESDE CADA CENTRO                     │
+└──────────────────────────────────────────────────────────────┘
+
+BELLAVISTA REGISTRA:
+1. Ingresa como: bellavista
+2. Producto: Ibuprofeno 200mg
+3. Requerida: 100 | Disponible: 70
+4. Fecha: Hoy
+5. Clic: Registrar Receta
+   → Se guarda para "Centro de Salud Bellavista"
+
+CARMEN REGISTRA:
+1. Ingresa como: carmen
+2. Producto: Paracetamol 500mg
+3. Requerida: 80 | Disponible: 40
+4. Fecha: Hoy
+5. Clic: Registrar Receta
+   → Se guarda para "Centro de Salud Carmen de la Legua"
+
+CALLAO REGISTRA:
+1. Ingresa como: callao
+2. Producto: Amoxicilina 500mg
+3. Requerida: 150 | Disponible: 100
+4. Fecha: Hoy
+5. Clic: Registrar Receta
+   → Se guarda para "Centro de Salud Callao"
+
+
+┌──────────────────────────────────────────────────────────────┐
+│ 6. ADMIN VE TODOS LOS DATOS COMBINADOS                       │
+└──────────────────────────────────────────────────────────────┘
+
+Cuando admin ingresa ve:
+
+TABLA COMPLETA:
+┌─────────────────────┬──────────────────────────┬─────────────┐
+│ Establecimiento     │ Producto                 │ Demanda No  │
+├─────────────────────┼──────────────────────────┼─────────────┤
+│ Centro Bellavista   │ Ibuprofeno 200mg         │ 30          │
+│ Centro Carmen       │ Paracetamol 500mg        │ 40          │
+│ Centro Callao       │ Amoxicilina 500mg        │ 50          │
+└─────────────────────┴──────────────────────────┴─────────────┘
+
+ESTADÍSTICAS:
+- Total Registros: 3
+- Establecimientos: 3
+- Total Demanda No Satisfecha: 120
+
+
+┌──────────────────────────────────────────────────────────────┐
+│ 7. IMPORTANTE: RESTRICCIONES                                 │
+└──────────────────────────────────────────────────────────────┘
+
+✗ NO puedes crear 2 usuarios para el mismo centro
+  Error: "Ya existe un usuario para el centro..."
+
+✗ Usuario de Centro NO puede:
+  - Ver otros centros
+  - Crear usuarios
+  - Cambiar de Red
+  - Cambiar de Establecimiento
+  - Eliminar usuarios
+
+✓ SOLO Admin puede:
+  - Ver todos los datos
+  - Crear usuarios
+  - Eliminar usuarios
+  - Crear administradores adicionales
+
+
+╔══════════════════════════════════════════════════════════════╗
+║ RESUMEN: 3 CENTROS = 3 USUARIOS (+ 1 ADMIN)                 ║
+║                                                              ║
+║ Admin → Ve TODOS                                            ║
+║ Bellavista → Ve SOLO Bellavista                             ║
+║ Carmen → Ve SOLO Carmen                                     ║
+║ Callao → Ve SOLO Callao                                     ║
+║                                                              ║
+║ Los datos NO se mezclan ✓                                   ║
+╚══════════════════════════════════════════════════════════════╝

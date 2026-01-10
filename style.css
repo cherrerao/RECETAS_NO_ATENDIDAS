@@ -1,0 +1,1251 @@
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: #333;
+    line-height: 1.6;
+    min-height: 100vh;
+    padding: 20px;
+}
+
+.container {
+    max-width: 1200px;
+    margin: 0 auto;
+    background: white;
+    border-radius: 10px;
+    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
+    overflow: hidden;
+}
+
+.header {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    padding: 40px;
+    text-align: center;
+}
+
+.header h1 {
+    font-size: 2.5em;
+    margin-bottom: 10px;
+}
+
+.subtitle {
+    font-size: 1.1em;
+    opacity: 0.9;
+}
+
+.content {
+    padding: 40px;
+}
+
+section {
+    margin-bottom: 50px;
+}
+
+section h2 {
+    color: #667eea;
+    margin-bottom: 20px;
+    font-size: 1.8em;
+    border-bottom: 3px solid #667eea;
+    padding-bottom: 10px;
+}
+
+/* Formulario */
+.form-section {
+    background: #f8f9fa;
+    padding: 30px;
+    border-radius: 8px;
+    border-left: 5px solid #667eea;
+}
+
+/* Ocultar temporalmente el catálogo de medicamentos según petición del usuario */
+#catalogo-medicamentos-section {
+    display: none !important;
+}
+
+/* === Mejora visual moderna === */
+:root{
+    --primary: #6f5aff;
+    --primary-2: #7b61ff;
+    --accent: #7b61ff;
+    --muted: #6b7280;
+    --bg: #f5f7fb;
+    --card: #ffffff;
+}
+
+body{
+    background: linear-gradient(180deg, #eef2ff 0%, #f8fbff 100%);
+}
+
+.header{
+    background: linear-gradient(90deg, var(--primary), var(--primary-2));
+    color: #fff;
+    padding: 36px 24px;
+    text-align: left;
+}
+
+.header h1{font-size:2rem;margin-bottom:6px}
+.subtitle{color: rgba(255,255,255,0.92)}
+
+.container{box-shadow: 0 12px 30px rgba(31,41,55,0.08);}
+
+.stat-grid{display:flex;gap:18px;flex-wrap:wrap}
+.stat-card{background:linear-gradient(180deg,#fff,#fbfdff);padding:18px;border-radius:10px;box-shadow:0 6px 18px rgba(99,102,241,0.06);display:flex;flex-direction:column;align-items:flex-start}
+.stat-number{font-weight:700;color:var(--primary);font-size:1.6rem}
+.stat-label{color:var(--muted);margin-top:6px}
+
+.form-section{border-left-color: var(--primary);}
+
+.btn{background: var(--primary); color: white}
+.btn:hover{transform: translateY(-1px); box-shadow: 0 8px 20px rgba(59,130,246,0.12)}
+.btn-secondary{background: linear-gradient(90deg,var(--primary-2),var(--primary)); border:none; color:#fff}
+
+.tabla-registros{width:100%;border-collapse:separate;border-spacing:0 6px}
+.tabla-registros thead th{background:linear-gradient(90deg,var(--primary),var(--primary-2));color:#fff;padding:12px 14px;border-radius:8px;font-weight:700;text-align:left}
+.tabla-registros tbody tr{background:var(--card);border-radius:6px}
+.tabla-registros tbody td{padding:12px 14px;border-bottom:0;color:#111}
+.tabla-registros tbody tr:hover{box-shadow:0 8px 18px rgba(15,23,42,0.06)}
+
+.search-bar input{padding:12px 16px;border-radius:8px;border:1px solid #e6e9ef;background:#fff;width:100%;box-shadow:none}
+
+/* Mejoras responsivas */
+@media (max-width:900px){
+    .form-row{grid-template-columns:1fr}
+    .header h1{font-size:1.6rem}
+}
+
+/* Pequeña animación de carga para tablas */
+.tabla-registros tbody tr.empty-state td{opacity:0.7;color:var(--muted)}
+
+/* Export button destacado */
+#btnExportar{background:linear-gradient(90deg,var(--accent),var(--primary-2));border-radius:8px;padding:10px 14px;color:#fff;font-weight:700}
+
+
+.form-group {
+    margin-bottom: 20px;
+}
+
+.form-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 20px;
+}
+
+label {
+    display: block;
+    margin-bottom: 8px;
+    font-weight: 600;
+    color: #333;
+}
+
+input[type="text"],
+input[type="number"],
+input[type="date"],
+textarea {
+    width: 100%;
+    padding: 12px;
+    border: 2px solid #ddd;
+    border-radius: 5px;
+    font-size: 1em;
+    transition: border-color 0.3s;
+    font-family: inherit;
+}
+
+input[type="text"]:focus,
+input[type="number"]:focus,
+input[type="date"]:focus,
+textarea:focus {
+    outline: none;
+    border-color: var(--primary);
+    background: #fff;
+}
+
+textarea {
+    resize: vertical;
+    min-height: 80px;
+}
+
+.btn {
+    padding: 12px 30px;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    font-size: 1em;
+    font-weight: 600;
+    transition: all 0.3s;
+    display: inline-block;
+}
+
+.btn-primary {
+    background: linear-gradient(90deg, var(--primary), var(--primary-2));
+    color: white;
+    width: 100%;
+}
+
+.btn-primary:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 24px rgba(123,61,255,0.18);
+}
+
+.btn-secondary {
+    background: #6c757d;
+    color: white;
+    padding: 8px 15px;
+    font-size: 0.9em;
+}
+
+.btn-secondary:hover {
+    background: #5a6268;
+}
+
+.btn-danger {
+    background: #dc3545;
+    color: white;
+    padding: 6px 12px;
+    font-size: 0.85em;
+}
+
+.btn-danger:hover {
+    background: #c82333;
+}
+
+/* Tabla */
+.section-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 15px;
+    margin-bottom: 20px;
+}
+
+.controls {
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+    align-items: center;
+}
+
+.search-box {
+    padding: 8px 15px;
+    border: 2px solid #ddd;
+    border-radius: 5px;
+    min-width: 250px;
+}
+
+.table-wrapper {
+    overflow-x: auto;
+    border-radius: 8px;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+}
+
+.tabla-registros {
+    width: 100%;
+    border-collapse: collapse;
+    background: white;
+}
+
+.tabla-registros thead {
+    background: linear-gradient(90deg, var(--primary), var(--primary-2));
+    color: white;
+}
+
+.tabla-registros th {
+    padding: 15px;
+    text-align: left;
+    font-weight: 600;
+}
+
+.tabla-registros td {
+    padding: 15px;
+    border-bottom: 1px solid #eee;
+}
+
+.tabla-registros tbody tr:hover {
+    background: #f5f5f5;
+}
+
+.tabla-registros .demanda-alto {
+    color: #dc3545;
+    font-weight: 600;
+}
+
+.tabla-registros .demanda-medio {
+    color: #ffc107;
+    font-weight: 600;
+}
+
+.tabla-registros .demanda-bajo {
+    color: #28a745;
+    font-weight: 600;
+}
+
+.empty-state {
+    text-align: center;
+    color: #999;
+    padding: 30px !important;
+    font-style: italic;
+}
+
+/* Estadísticas */
+.stats-section {
+    background: #f8f9fa;
+    padding: 30px;
+    border-radius: 8px;
+}
+
+.stats-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 20px;
+}
+
+.stat-card {
+    background: white;
+    padding: 20px;
+    border-radius: 8px;
+    text-align: center;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+    border-top: 4px solid var(--primary);
+}
+
+.stat-card.alert {
+    border-top-color: #dc3545;
+}
+
+.stat-number {
+    font-size: 2.5em;
+    font-weight: bold;
+    color: var(--primary);
+    margin-bottom: 10px;
+}
+
+.stat-card.alert .stat-number {
+    color: #dc3545;
+}
+
+.stat-label {
+    color: #666;
+    font-size: 0.95em;
+}
+
+/* Productos Críticos */
+.critical-section {
+    background: #fff3cd;
+    padding: 30px;
+    border-radius: 8px;
+    border-left: 5px solid #ffc107;
+}
+
+.critical-list {
+    display: grid;
+    gap: 15px;
+}
+
+.critical-item {
+    background: white;
+    padding: 15px;
+    border-radius: 5px;
+    border-left: 4px solid #dc3545;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.critical-info h4 {
+    color: #333;
+    margin-bottom: 5px;
+}
+
+.critical-info p {
+    color: #666;
+    font-size: 0.9em;
+}
+
+.critical-number {
+    font-size: 1.8em;
+    font-weight: bold;
+    color: #dc3545;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+    .header h1 {
+        font-size: 1.8em;
+    }
+
+    .content {
+        padding: 20px;
+    }
+
+    .form-row {
+        grid-template-columns: 1fr;
+    }
+
+    .section-header {
+        flex-direction: column;
+        align-items: stretch;
+    }
+
+    .section-header h2 {
+        margin-bottom: 15px;
+    }
+
+    .controls {
+        flex-direction: column;
+    }
+
+    .search-box {
+        min-width: 100%;
+    }
+
+    .controls .btn {
+        width: 100%;
+    }
+
+    .tabla-registros {
+        font-size: 0.9em;
+    }
+
+    .tabla-registros th,
+    .tabla-registros td {
+        padding: 10px;
+    }
+
+    .stats-grid {
+        grid-template-columns: 1fr 1fr;
+    }
+
+    .critical-item {
+        flex-direction: column;
+        align-items: flex-start;
+    }
+
+    .critical-number {
+        margin-top: 10px;
+    }
+}
+/* Estilos para autocomplete de productos */
+.autocomplete-wrapper {
+    position: relative;
+}
+
+.autocomplete-wrapper input {
+    width: 100%;
+    padding: 10px;
+    border: 1px solid #ddd;
+    border-radius: 5px;
+    font-size: 1em;
+}
+
+.autocomplete-wrapper input:focus {
+    outline: none;
+    border-color: var(--primary);
+    box-shadow: 0 0 8px rgba(123,61,255,0.16);
+}
+
+.sugerencias-list {
+    position: absolute;
+    top: 100%;
+    left: 0;
+    right: 0;
+    background: white;
+    border: 1px solid #ddd;
+    border-top: none;
+    border-radius: 0 0 5px 5px;
+    max-height: 400px;
+    overflow-y: auto;
+    z-index: 1000;
+    display: none;
+    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+}
+
+/* Scrollbar personalizado para sugerencias */
+.sugerencias-list::-webkit-scrollbar {
+    width: 8px;
+}
+
+.sugerencias-list::-webkit-scrollbar-track {
+    background: #f1f1f1;
+    border-radius: 4px;
+}
+
+.sugerencias-list::-webkit-scrollbar-thumb {
+    background: var(--primary);
+    border-radius: 4px;
+}
+
+.sugerencias-list::-webkit-scrollbar-thumb:hover {
+    background: var(--primary-2);
+}
+
+.sugerencias-list.active {
+    display: block;
+}
+
+.sugerencia-item {
+    padding: 12px 15px;
+    border-bottom: 1px solid #eee;
+    cursor: pointer;
+    transition: background-color 0.2s, box-shadow 0.2s;
+}
+
+.sugerencia-item:hover {
+    background-color: #f5f5f5;
+    box-shadow: inset 0 0 3px rgba(123,61,255,0.06);
+}
+
+.sugerencia-item:last-child {
+    border-bottom: none;
+}
+
+.sugerencia-item.no-resultado {
+    color: #999;
+    cursor: default;
+    text-align: center;
+    padding: 20px 15px;
+}
+
+.sugerencia-item.no-resultado:hover {
+    background-color: white;
+    box-shadow: none;
+}
+
+.sugerencia-codigo {
+    font-weight: bold;
+    color: #667eea;
+    font-size: 0.9em;
+    margin-bottom: 3px;
+}
+
+.sugerencia-descripcion {
+    font-size: 0.95em;
+    color: #333;
+    margin-bottom: 3px;
+}
+
+.sugerencia-categoria {
+    font-size: 0.8em;
+    color: #999;
+    font-style: italic;
+}
+/* Mensajes pequeños y atenuados (por ejemplo #medicamentosFileMsg) */
+.small.muted {
+    font-size: 0.95em;
+    color: #555;
+    margin-top: 3px;
+}
+
+/* ====================================
+   CLASES DE UTILIDAD PARA VISIBILIDAD
+   ==================================== */
+
+.login-hidden {
+    display: none !important;
+}
+
+.app-hidden {
+    display: none !important;
+}
+
+.modal-hidden {
+    display: none !important;
+}
+
+.campos-centro-hidden {
+    display: none !important;
+}
+
+.tab-hidden {
+    display: none !important;
+}
+
+.tab-content.active {
+    display: block !important;
+}
+
+.error-hidden {
+    display: none !important;
+}
+
+.success-hidden {
+    display: none !important;
+}
+
+.btn-hidden {
+    display: none !important;
+}
+
+.tab-btn-hidden {
+    display: none !important;
+}
+
+/* Clases adicionales para mejor estructura */
+.form-group-relative {
+    position: relative;
+}
+
+.catalogo-status {
+    margin-top: 6px;
+    color: #555;
+    font-size: 0.95em;
+}
+
+.search-bar {
+    margin-bottom: 10px;
+}
+@media print {
+    body {
+        background: white;
+    }
+
+    .controls {
+        display: none;
+    }
+
+    .btn {
+        display: none;
+    }
+}
+
+/* ====================================
+   ESTILOS DE AUTENTICACIÓN Y LOGIN
+   ==================================== */
+
+.login-screen {
+    display: flex;
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    justify-content: center;
+    align-items: center;
+    z-index: 10000;
+    overflow: hidden;
+    /* Background image for login: using the provided file in the project root */
+    background-image: url('actualidad-1_salud-291119-030013.jpg');
+    background-size: cover;
+    background-position: center center;
+}
+
+.login-container {
+    width: 100%;
+    max-width: 450px;
+    padding: 20px;
+}
+
+.login-card {
+    background: white;
+    border-radius: 15px;
+    padding: 50px 40px;
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+    text-align: center;
+}
+
+/* Overlay to darken image and add neon glow */
+
+.login-screen::before{
+    content: '';
+    position: absolute;
+    inset: 0;
+    /* Very light overlay so background stays visible but login card reads very bright */
+    background: linear-gradient(180deg, rgba(2,6,23,0.18), rgba(12,16,40,0.12));
+    z-index: 10001;
+    pointer-events: none;
+    transition: background 240ms ease;
+}
+
+/* Glass effect for login card to improve contrast over the background */
+.login-card{
+    position:relative;
+    z-index:10002;
+    /* Force fully opaque white with high contrast so it always reads as bright */
+    background: #ffffff !important;
+    border: 1px solid rgba(0,0,0,0.06) !important;
+    box-shadow: 0 48px 120px rgba(2,6,23,0.38), 0 12px 44px rgba(91,110,246,0.06) !important;
+    max-width: 560px;
+    width: 92%;
+    padding: 48px 42px;
+    border-radius: 16px;
+    transform-origin: center;
+    animation: popIn 420ms cubic-bezier(.2,.9,.28,1) both;
+}
+
+.login-card h1{font-family:'Rajdhani', 'Poppins', sans-serif;letter-spacing:0.6px;color:#071133}
+
+/* Slightly lighten inputs and labels for readability */
+.login-form label{color:#0b1220}
+
+/* Inputs and selects: pure white and brighter borders */
+.login-form input, .login-form select, .login-form textarea{background: #ffffff !important; border: 1px solid #e9eef8; color: #071133}
+.login-form input::placeholder{color:#9aa3b2}
+
+/* Remove any inner shadows that dull the inputs */
+.login-form input, .login-form select, .login-form textarea{box-shadow:none}
+
+/* Make inputs and placeholders brighter and remove dull tint */
+.login-form input::placeholder{color:#9aa3b2}
+.login-form input, .login-form select, .login-form textarea{border:1px solid #e6e9ef;color:#071133}
+
+/* Brighten the primary button */
+.btn-primary{background:linear-gradient(90deg,#6f5aff,#7b61ff);color:#fff;box-shadow:0 14px 40px rgba(123,61,255,0.14)}
+.btn-primary:hover{box-shadow:0 18px 50px rgba(123,61,255,0.18);transform:translateY(-3px)}
+
+/* Reduce any page-wide tint leaking into the card by ensuring high contrast text */
+.login-card, .login-card *{color: #081227}
+
+/* Slight outline to ensure the card reads white against bright parts of the image */
+.login-card{outline: 1px solid rgba(255,255,255,0.06)}
+
+/* Pop-in animation for stronger presence */
+@keyframes popIn{
+    0%{opacity:0;transform:translateY(18px) scale(0.98)}
+    60%{opacity:1;transform:translateY(-6px) scale(1.02)}
+    100%{opacity:1;transform:translateY(0) scale(1)}
+}
+
+/* Add subtle neon rim to emphasize front card */
+.login-card::after{display:none}
+
+/* Ensure login content is clearly above background */
+.login-screen .login-container{display:flex;align-items:center;justify-content:center;height:100%}
+
+/* Mejorar apariencia del select para que no se vea "blanco" y destaque dentro del login */
+.login-form select {
+    -webkit-appearance: none;
+    -moz-appearance: none;
+    appearance: none;
+    background: #ffffff !important;
+    border: 1px solid #e9eef8;
+    padding: 12px 40px 12px 14px;
+    border-radius: 10px;
+    font-weight: 600;
+    color: #071133;
+    box-shadow: none;
+    background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='14' height='8' viewBox='0 0 14 8'><path fill='%23071133' d='M7 8L0 0h14z'/></svg>");
+    background-repeat: no-repeat;
+    background-position: right 12px center;
+    z-index: 10003;
+}
+
+.login-form select:focus {
+    outline: none;
+    border-color: var(--primary);
+    box-shadow: 0 8px 30px rgba(91,110,246,0.12), 0 0 0 4px rgba(123,61,255,0.06);
+}
+
+/* Opciones: estilo básico (varía por navegador) */
+.login-form select option {
+    background: #ffffff;
+    color: #071133;
+    padding: 6px 8px;
+}
+
+/* Forzar que el menú aparezca por encima en casos de stacking context */
+.login-form select::-ms-expand{display:none}
+
+
+/* Make overlay darker on very small screens where background may interfere */
+@media (max-width:480px){
+    .login-screen::before{background: linear-gradient(180deg, rgba(2,6,23,0.55), rgba(12,16,40,0.55));}
+}
+
+
+.login-card h1 {
+    color: #333;
+    margin-bottom: 10px;
+    font-size: 2em;
+}
+
+.login-subtitle {
+    color: #666;
+    margin-bottom: 40px;
+    font-size: 1.1em;
+}
+
+.login-form {
+    text-align: left;
+}
+
+.login-form .form-group {
+    margin-bottom: 25px;
+    position: relative;
+}
+
+.login-form label {
+    display: block;
+    margin-bottom: 10px;
+    color: #333;
+    font-weight: 600;
+    font-size: 1em;
+}
+
+.login-form input {
+    width: 100%;
+    padding: 14px 16px;
+    border: 2px solid #e0e0e0;
+    border-radius: 8px;
+    font-size: 1em;
+    transition: all 0.3s ease;
+}
+
+.login-form input:focus {
+    outline: none;
+    border-color: var(--primary);
+    box-shadow: 0 0 0 4px rgba(123,61,255,0.08);
+}
+
+.login-form select {
+    width: 100%;
+    padding: 14px 16px;
+    border: 2px solid #e0e0e0;
+    border-radius: 8px;
+    font-size: 1em;
+    transition: all 0.3s ease;
+    background-color: white;
+    cursor: pointer;
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+}
+
+.login-form select:focus {
+    outline: none;
+    border-color: var(--primary);
+    box-shadow: 0 0 0 4px rgba(123,61,255,0.08);
+}
+
+.btn-login {
+    width: 100%;
+    padding: 14px;
+    font-size: 1.1em;
+    font-weight: 600;
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.btn-login:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 10px 20px rgba(123,61,255,0.18);
+}
+
+.error-message {
+    background: #f8d7da;
+    color: #721c24;
+    padding: 12px 15px;
+    border-radius: 5px;
+    margin-bottom: 20px;
+    border-left: 4px solid #dc3545;
+}
+
+.success-message {
+    background: #d4edda;
+    color: #155724;
+    padding: 12px 15px;
+    border-radius: 5px;
+    margin-bottom: 20px;
+    border-left: 4px solid #28a745;
+}
+
+.login-info {
+    margin-top: 30px;
+    padding-top: 30px;
+    border-top: 1px solid #e0e0e0;
+    font-size: 0.95em;
+    color: #666;
+}
+
+.login-info code {
+    background: #f0f0f0;
+    padding: 3px 8px;
+    border-radius: 4px;
+    font-family: 'Courier New', monospace;
+    color: #d63384;
+    font-weight: 600;
+}
+
+/* ====================================
+   ESTILOS DE NAVBAR
+   ==================================== */
+
+.app-container {
+    display: flex;
+    flex-direction: column;
+    min-height: 100vh;
+}
+
+.app-hidden {
+    display: none !important;
+}
+
+.navbar {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    padding: 15px 30px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+}
+
+.navbar-left {
+    display: flex;
+    align-items: center;
+    gap: 20px;
+}
+
+.navbar-title {
+    font-size: 1.5em;
+    margin: 0;
+}
+
+.user-info {
+    background: rgba(255, 255, 255, 0.2);
+    padding: 8px 15px;
+    border-radius: 20px;
+    font-size: 0.95em;
+
+}
+
+/* ======= Refinamientos finales y diseño pulido ======= */
+
+/* Contenedor principal centrado y ancho óptimo */
+.container {
+    max-width: 1100px;
+    margin: 26px auto;
+    padding: 22px;
+    border-radius: 12px;
+    background: linear-gradient(180deg, rgba(255,255,255,0.95), rgba(250,252,255,0.95));
+}
+
+/* Fuente y pequeños ajustes globales */
+body, input, button, select, textarea {
+    font-family: 'Poppins', Inter, 'Segoe UI', Roboto, system-ui, -apple-system, 'Helvetica Neue', Arial;
+    color: #111827;
+}
+
+/* Tarjetas claras y consistentes */
+.card {
+    background: white;
+    border-radius: 12px;
+    padding: 18px;
+    box-shadow: 0 8px 24px rgba(16,24,40,0.06);
+}
+
+/* Layout: header más compacto y contenido en columnas limpias */
+.header{padding:28px 26px;border-radius:12px}
+.header h1{font-size:1.6rem}
+.subtitle{font-size:0.95rem}
+
+/* Mejor separación entre secciones */
+section{margin-bottom:28px}
+
+/* Inputs y selects pulidos */
+input[type="text"], textarea, select {
+    border: 1px solid #e6e9ef;
+    background: #ffffff;
+    padding: 10px 12px;
+    border-radius: 10px;
+}
+
+input:focus, textarea:focus, select:focus { box-shadow: 0 6px 20px rgba(99,102,241,0.08); border-color: var(--primary); }
+
+/* Botones modernizados */
+.btn, .btn-primary, .btn-secondary { border-radius: 10px; padding: 10px 16px; }
+.btn-primary{background:linear-gradient(90deg,var(--primary),var(--primary-2));box-shadow:0 8px 18px rgba(91,110,246,0.12)}
+.btn-primary:active{transform:translateY(1px)}
+
+/* Export destacado con icono visual */
+#btnExportar{position:relative;display:inline-flex;align-items:center;gap:8px}
+#btnExportar::before{content:'⬇';font-size:0.95em;display:inline-block}
+
+/* Tablas con filas separadas y look 'card-like' */
+.tabla-registros thead th{border-radius:8px}
+.tabla-registros tbody tr{border-radius:10px;margin-bottom:8px;display:table-row}
+.tabla-registros tbody tr td:first-child{border-top-left-radius:10px;border-bottom-left-radius:10px}
+.tabla-registros tbody tr td:last-child{border-top-right-radius:10px;border-bottom-right-radius:10px}
+
+/* Sticky header for wide screens */
+@media (min-width:900px){
+    .tabla-registros thead th{position:sticky;top:0}
+}
+
+/* Mejor contraste para estados */
+.demanda-alto{color:#b91c1c}
+.demanda-medio{color:#d97706}
+.demanda-bajo{color:#059669}
+
+/* Responsive tweaks */
+@media (max-width:900px){
+    .container{padding:14px}
+    .header{padding:18px}
+    .header h1{font-size:1.25rem}
+}
+
+/* Animation sutil para entrada de secciones */
+section{opacity:0;transform:translateY(6px);animation:enter 420ms ease forwards}
+@keyframes enter{to{opacity:1;transform:none}}
+
+/* Helper: contenedor principal para centrar contenido interno */
+.main-content{max-width:1100px;margin:0 auto}
+
+/* Pequeño ajuste visual para mensajes y etiquetas */
+.small.muted{color:#6b7280}
+
+
+.navbar-right {
+    display: flex;
+    gap: 10px;
+}
+
+.btn-small {
+    padding: 8px 15px;
+    font-size: 0.9em;
+}
+
+.btn-danger {
+    background: #dc3545;
+    color: white;
+    border: none;
+    border-radius: 5px;
+    padding: 10px 20px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.btn-danger:hover {
+    background: #c82333;
+}
+
+/* ====================================
+   ESTILOS DE MODAL
+   ==================================== */
+
+.modal {
+    display: flex;
+    position: fixed;
+    z-index: 9000;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: rgba(0, 0, 0, 0.5);
+    justify-content: center;
+    align-items: center;
+}
+
+.modal-hidden {
+    display: none !important;
+}
+
+.modal-content {
+    background: white;
+    border-radius: 10px;
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+    max-height: 90vh;
+    overflow-y: auto;
+    animation: modalSlideIn 0.3s ease;
+}
+
+.modal-large {
+    max-width: 800px;
+    width: 90%;
+}
+
+@keyframes modalSlideIn {
+    from {
+        transform: translateY(-50px);
+        opacity: 0;
+    }
+    to {
+        transform: translateY(0);
+        opacity: 1;
+    }
+}
+
+.modal-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 25px;
+    border-bottom: 1px solid #e0e0e0;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+}
+
+.modal-header h2 {
+    margin: 0;
+}
+
+.btn-close {
+    background: none;
+    border: none;
+    color: white;
+    font-size: 28px;
+    cursor: pointer;
+    transition: transform 0.2s;
+}
+
+.btn-close:hover {
+    transform: scale(1.2);
+}
+
+.modal-body {
+    padding: 30px;
+}
+
+/* Tabs en modal */
+.admin-tabs {
+    display: flex;
+    gap: 10px;
+    margin-bottom: 30px;
+    border-bottom: 2px solid #e0e0e0;
+}
+
+.tab-btn {
+    background: none;
+    border: none;
+    padding: 12px 20px;
+    cursor: pointer;
+    font-size: 1em;
+    color: #666;
+    font-weight: 500;
+    border-bottom: 3px solid transparent;
+    transition: all 0.3s ease;
+}
+
+.tab-btn:hover {
+    color: #667eea;
+}
+
+.tab-btn.active {
+    color: #667eea;
+    border-bottom-color: #667eea;
+}
+
+.tab-content {
+    display: none;
+}
+
+.tab-content.active {
+    display: block !important;
+}
+
+.admin-form .form-group {
+    margin-bottom: 20px;
+}
+
+.admin-form label {
+    display: block;
+    margin-bottom: 8px;
+    font-weight: 600;
+    color: #333;
+}
+
+.admin-form input,
+.admin-form select {
+    width: 100%;
+    padding: 12px;
+    border: 2px solid #e0e0e0;
+    border-radius: 5px;
+    font-size: 1em;
+    font-family: inherit;
+}
+
+.admin-form input:focus,
+.admin-form select:focus {
+    outline: none;
+    border-color: #667eea;
+    box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+}
+
+.admin-form small {
+    display: block;
+    margin-top: 5px;
+    color: #f0ad4e;
+    font-size: 0.9em;
+}
+
+.tabla-usuarios {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 20px;
+}
+
+.tabla-usuarios thead {
+    background: #f8f9fa;
+    border-bottom: 2px solid #e0e0e0;
+}
+
+.tabla-usuarios th {
+    padding: 15px;
+    text-align: left;
+    font-weight: 600;
+    color: #333;
+}
+
+.tabla-usuarios td {
+    padding: 15px;
+    border-bottom: 1px solid #e0e0e0;
+}
+
+.tabla-usuarios tr:hover {
+    background: #f8f9fa;
+}
+
+/* ==========================
+   Fondo animado y visuales
+   ========================== */
+
+.bg-visuals{
+    position:fixed;inset:0;z-index:0;pointer-events:none;overflow:hidden;background-color:#060712;
+    background-image: url('Imagenes/bg-futuristic.jpg'), linear-gradient(180deg,#040417 0%, #071032 60%);
+    background-size: cover, cover; background-position:center center; filter: contrast(1.05) saturate(1.05);
+}
+
+.bg-visuals .blob{position:absolute;border-radius:50%;filter:blur(40px);opacity:0.85;mix-blend-mode:screen}
+.bg-visuals .blob-1{width:520px;height:520px;left:-8%;top:5%;background:radial-gradient(circle at 30% 30%, rgba(123,61,255,0.85), rgba(59,130,246,0.12));animation:blobMove 14s ease-in-out infinite}
+.bg-visuals .blob-2{width:420px;height:420px;right:-6%;top:20%;background:radial-gradient(circle at 60% 40%, rgba(255,122,89,0.85), rgba(255,122,89,0.08));animation:blobMove 18s ease-in-out infinite reverse}
+.bg-visuals .blob-3{width:360px;height:360px;left:20%;bottom:-10%;background:radial-gradient(circle at 30% 60%, rgba(91,110,246,0.9), rgba(123,61,255,0.06));animation:blobMove 12s ease-in-out infinite}
+
+.bg-visuals .grid-lines{position:absolute;inset:0;background-image:linear-gradient(0deg, rgba(255,255,255,0.02) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.02) 1px, transparent 1px);background-size:100px 100px, 100px 100px;mix-blend-mode:overlay;opacity:0.25}
+
+@keyframes blobMove{0%{transform:translateY(0) scale(1)}50%{transform:translateY(-30px) scale(1.06)}100%{transform:translateY(0) scale(1)}}
+
+/* Asegurar contenido por encima del fondo */
+.app-container, .container, .login-card { position: relative; z-index: 2 }
+
+/* Neon / glow for interactive elements */
+
+.btn-primary{box-shadow:0 8px 30px rgba(123,61,255,0.2), 0 0 18px rgba(123,61,255,0.06)}
+.btn-primary:hover{box-shadow:0 14px 40px rgba(123,61,255,0.28), 0 0 28px rgba(123,61,255,0.12); transform: translateY(-3px)}
+
+#btnExportar{background:linear-gradient(90deg,var(--primary-2),var(--primary));box-shadow:0 10px 30px rgba(123,61,255,0.14);}
+
+/* Header glow */
+.header{box-shadow:0 10px 40px rgba(91,110,246,0.08);border:1px solid rgba(255,255,255,0.03)}
+.header h1{color: #fff; text-shadow: 0 6px 18px rgba(91,110,246,0.18)}
+
+/* Animated gradient for table header */
+.tabla-registros thead th{background:linear-gradient(90deg,var(--primary),var(--primary-2));background-size:200% 100%;animation:moveGrad 6s linear infinite;border-radius:8px;color:white}
+@keyframes moveGrad{0%{background-position:0% 50%}50%{background-position:100% 50%}100%{background-position:0% 50%}}
+
+/* Subtle floating icons */
+.navbar-title{display:flex;align-items:center;gap:10px}
+
+/* Adjust table wrapper to show over background */
+.table-wrapper, .card, .form-section, .stats-section, .critical-section{background: linear-gradient(180deg, rgba(255,255,255,0.9), rgba(250,252,255,0.85));}
+
+/* Reduced opacity for background image on small devices to improve readability */
+@media (max-width:900px){
+    .bg-visuals{opacity:0.6}
+}
+
+
+

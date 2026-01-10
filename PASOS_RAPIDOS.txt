@@ -1,0 +1,73 @@
+========================================
+PASOS RÁPIDOS - CREAR Y USAR USUARIO
+========================================
+
+PASO 1️⃣ - LOGIN COMO ADMIN
+---------------------------
+Usuario: admin
+Contraseña: admin123
+Clic: INGRESAR
+
+
+PASO 2️⃣ - ABRIR GESTIÓN DE USUARIOS
+------------------------------------
+Clic en botón: ⚙️ Gestión de Usuarios
+(arriba a la derecha)
+
+
+PASO 3️⃣ - CREAR USUARIO DEL CENTRO
+-----------------------------------
+Rellena:
+✓ Nombre de Usuario: bellavista (o cualquier nombre)
+✓ Contraseña: clave123
+✓ Rol: Usuario (Centro)
+✓ Centro: Centro de Salud Bellavista
+        (escribe y selecciona de la lista)
+
+Clic: Crear Usuario
+
+
+PASO 4️⃣ - VER QUE SE CREÓ
+---------------------------
+Cambia a pestaña: Lista de Usuarios
+Deberías ver el usuario en la tabla
+
+
+PASO 5️⃣ - CERRAR SESIÓN
+------------------------
+Clic: Salir (arriba derecha)
+Confirma
+
+
+PASO 6️⃣ - INGRESA CON EL USUARIO DEL CENTRO
+---------------------------------------------
+Usuario: bellavista
+Contraseña: clave123
+Clic: INGRESAR
+
+
+PASO 7️⃣ - VERIFICAR RESTRICCIONES
+----------------------------------
+✓ Nombre: bellavista
+✓ Rol: 🏥 Usuario de Centro
+✓ Centro: Centro de Salud Bellavista
+✓ Red: DESHABILITADO (gris)
+✓ Establecimiento: SOLO muestra tu centro
+✓ NO hay botón ⚙️ Gestión de Usuarios
+✓ Solo ves registros de tu centro
+
+
+PASO 8️⃣ - REGISTRAR RECETA
+----------------------------
+1. Producto: Ibuprofeno 200mg
+2. Cantidad Requerida: 100
+3. Cantidad Disponible: 60
+4. Fecha: (hoy)
+5. Clic: Registrar Receta
+
+La receta se guardará para tu centro
+
+
+========================================
+LISTO! Ya tienes usuario y admin funcionando
+========================================

@@ -1,0 +1,210 @@
+=====================================================
+FLUJO COMPLETO: ADMIN CREA, USUARIOS INGRESAN
+=====================================================
+
+ESCENARIO:
+==========
+Tienes varios centros de salud:
+- Centro de Salud Bellavista
+- Centro de Salud Carmen de la Legua
+- Centro de Salud Callao
+
+Cada centro tiene su propio usuario para ingresar al sistema.
+
+
+FASE 1: ADMINISTRADOR CREA LOS USUARIOS
+=========================================
+
+1. LOGIN COMO ADMIN
+   Usuario: admin
+   Contraseña: admin123
+
+2. ABRE "⚙️ Gestión de Usuarios"
+
+3. CREAR USUARIO PARA CENTRO BELLAVISTA
+   
+   Nombre de Usuario: bellavista
+   Contraseña: bellavista2025
+   Rol: Usuario (Centro)
+   Centro: Centro de Salud Bellavista
+   
+   → Clic: Crear Usuario
+   → Verás: ✓ Usuario "bellavista" creado exitosamente
+
+4. CREAR USUARIO PARA CENTRO CARMEN DE LA LEGUA
+   
+   Nombre de Usuario: carmen
+   Contraseña: carmen2025
+   Rol: Usuario (Centro)
+   Centro: Centro de Salud Carmen de la Legua
+   
+   → Clic: Crear Usuario
+   → Verás: ✓ Usuario "carmen" creado exitosamente
+
+5. CREAR USUARIO PARA CENTRO CALLAO
+   
+   Nombre de Usuario: callao
+   Contraseña: callao2025
+   Rol: Usuario (Centro)
+   Centro: Centro de Salud Callao
+   
+   → Clic: Crear Usuario
+   → Verás: ✓ Usuario "callao" creado exitosamente
+
+6. VERIFICAR EN "Lista de Usuarios"
+   
+   Deberías ver:
+   ┌─────────────┬──────────┬────────────────────────────┐
+   │ Usuario     │ Rol      │ Centro                     │
+   ├─────────────┼──────────┼────────────────────────────┤
+   │ bellavista  │ 🏥 User  │ Centro de Salud Bellavista │
+   │ carmen      │ 🏥 User  │ Centro de Salud Carmen...  │
+   │ callao      │ 🏥 User  │ Centro de Salud Callao     │
+   └─────────────┴──────────┴────────────────────────────┘
+
+
+FASE 2: USUARIOS DE CADA CENTRO INGRESAN
+==========================================
+
+USUARIO 1 - BELLAVISTA:
+-----------------------
+1. Clic: Salir (si admin aún está dentro)
+2. Login:
+   Usuario: bellavista
+   Contraseña: bellavista2025
+3. Clic: INGRESAR
+
+VERÁ:
+✓ Nombre: bellavista
+✓ Rol: 🏥 Usuario de Centro
+✓ Centro: Centro de Salud Bellavista
+✓ Red: DESHABILITADA (gris)
+✓ Establecimiento: SOLO Centro de Salud Bellavista
+✓ SOLO ve registros de Bellavista
+✓ SOLO puede registrar en Bellavista
+
+
+USUARIO 2 - CARMEN:
+-------------------
+1. En otra ventana, abre index.html
+2. Login:
+   Usuario: carmen
+   Contraseña: carmen2025
+3. Clic: INGRESAR
+
+VERÁ:
+✓ Nombre: carmen
+✓ Rol: 🏥 Usuario de Centro
+✓ Centro: Centro de Salud Carmen de la Legua
+✓ SOLO ve registros de Carmen de la Legua
+✓ SOLO puede registrar en Carmen de la Legua
+
+
+USUARIO 3 - CALLAO:
+-------------------
+1. En otra ventana, abre index.html
+2. Login:
+   Usuario: callao
+   Contraseña: callao2025
+3. Clic: INGRESAR
+
+VERÁ:
+✓ Nombre: callao
+✓ Rol: 🏥 Usuario de Centro
+✓ Centro: Centro de Salud Callao
+✓ SOLO ve registros de Callao
+✓ SOLO puede registrar en Callao
+
+
+REGISTRAR RECETAS DESDE CADA CENTRO
+====================================
+
+BELLAVISTA registra una receta:
+1. Ingresa como: bellavista
+2. Producto: Ibuprofeno 200mg
+3. Requerida: 100 | Disponible: 70
+4. Clic: Registrar Receta
+→ Se guarda para Centro de Salud Bellavista
+
+
+CARMEN registra una receta:
+1. Ingresa como: carmen
+2. Producto: Paracetamol 500mg
+3. Requerida: 80 | Disponible: 40
+4. Clic: Registrar Receta
+→ Se guarda para Centro de Salud Carmen de la Legua
+
+
+CALLAO registra una receta:
+1. Ingresa como: callao
+2. Producto: Amoxicilina 500mg
+3. Requerida: 150 | Disponible: 100
+4. Clic: Registrar Receta
+→ Se guarda para Centro de Salud Callao
+
+
+VER DATOS COMO ADMINISTRADOR
+=============================
+
+Admin ve TODOS los datos:
+1. Login como: admin
+2. Admin: admin123
+3. Verá:
+   - Receta de Bellavista
+   - Receta de Carmen
+   - Receta de Callao
+   - Estadísticas combinadas
+   - OPCIÓN: Puede ver datos por centro
+
+
+TABLA RESUMEN
+=============
+
+Estado:           admin / admin123   bellavista / bellavista2025
+────────────────────────────────────────────────────────────────
+Puede ver:        TODOS              SOLO Bellavista
+Puede registrar:  TODOS              SOLO Bellavista
+Puede crear:      SÍ (usuarios)      NO
+Ver otros:        SÍ                 NO
+Rol:              👨‍💼 Administrador   🏥 Usuario de Centro
+
+
+NOTAS IMPORTANTES
+=================
+
+1. CADA CENTRO = 1 USUARIO
+   - No puedes crear 2 usuarios para el mismo centro
+   - Si lo intentas, verás error: 
+     "Ya existe un usuario para el centro..."
+
+2. LOS DATOS NO SE MEZCLAN
+   - Bellavista NUNCA ve datos de Carmen
+   - Carmen NUNCA ve datos de Callao
+   - Cada usuario solo ve su información
+
+3. SEGURIDAD
+   - Contraseñas hasheadas en localStorage
+   - No se pueden ver contraseñas
+   - Cada usuario solo accede con su clave
+
+4. ADMIN PUEDE:
+   - Ver TODO
+   - Crear/eliminar usuarios
+   - Ver estadísticas de todos
+
+5. USUARIO DE CENTRO:
+   - Ve solo su centro
+   - Registra solo en su centro
+   - NO ve gestión de usuarios
+
+=====================================================
+¡LISTO PARA USAR!
+=====================================================
+
+Resumido:
+1. Admin crea usuarios para cada centro
+2. Cada usuario inicia sesión con sus credenciales
+3. Cada uno ve SOLO su información
+4. Admin ve TODO
+
+Ejemplo práctico ya implementado ✓

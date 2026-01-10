@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test Autocomplete</title>
+    <link rel="stylesheet" href="style.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.17.4/xlsx.full.min.js"></script>
+    <script src="auth.js"></script>
+</head>
+<body>
+    <div style="padding: 40px; max-width: 500px; margin: 0 auto;">
+        <h1>Test de Autocomplete en Login</h1>
+        
+        <div style="background: #f5f5f5; padding: 20px; border-radius: 8px; margin-bottom: 20px;">
+            <h3>Paso 1: Crear un usuario de prueba</h3>
+            <button onclick="crearUsuarioPrueba()" class="btn btn-primary">
+                Crear Usuario: TestUser en CAMI BELEN
+            </button>
+            <p id="status1" style="margin-top: 10px;"></p>
+        </div>
+
+        <div style="background: #f5f5f5; padding: 20px; border-radius: 8px;">
+            <h3>Paso 2: Recargar página para ver autocomplete</h3>
+            <p>Después de crear el usuario, recarga la página y prueba escribir en el campo de centro.</p>
+            <button onclick="location.reload()" class="btn btn-secondary">Recargar Página</button>
+            <p id="status2" style="margin-top: 10px;"></p>
+        </div>
+
+        <div style="background: #f0f0f0; padding: 20px; border-radius: 8px; margin-top: 20px;">
+            <h3>Info de Debug</h3>
+            <button onclick="mostrarDebug()" class="btn btn-secondary">Mostrar Info</button>
+            <pre id="debugInfo" style="background: white; padding: 10px; border-radius: 5px; overflow-x: auto; max-height: 300px; margin-top: 10px;"></pre>
+        </div>
+    </div>
+
+    <script src="script.js"></script>
+    <script>
+        function crearUsuarioPrueba() {
+            try {
+                const auth = new AutenticacionSistema();
+                
+                // Si no existe, crear
+                const usuarioExiste = auth.obtenerTodosLosUsuarios().some(u => u.usuario === 'testuser');
+                
+                if (usuarioExiste) {
+                    document.getElementById('status1').innerHTML = 
+                        '<span style="color: #ff6b6b;">❌ El usuario testuser ya existe</span>';
+                    return;
+                }
+                
+                auth.crearUsuario('CAMI BELEN', 'testuser', 'password123');
+                document.getElementById('status1').innerHTML = 
+                    '<span style="color: #51cf66;">✓ Usuario creado exitosamente</span><br>Usuario: testuser<br>Centro: CAMI BELEN<br>Contraseña: password123';
+            } catch (error) {
+                document.getElementById('status1').innerHTML = 
+                    `<span style="color: #ff6b6b;">❌ Error: ${error.message}</span>`;
+                console.error(error);
+            }
+        }
+
+        function mostrarDebug() {
+            const auth = new AutenticacionSistema();
+            const usuarios = auth.obtenerTodosLosUsuarios();
+            const centros = [...new Set(usuarios.map(u => u.centro))];
+            const catalogoCentros = CATALOGO_ESTABLECIMIENTOS.map(e => e.nombre).slice(0, 10);
+            
+            const info = {
+                'Usuarios en BD': usuarios.length,
+                'Centros en BD': centros,
+                'Centros en catálogo (primeros 10)': catalogoCentros,
+                'Admin por defecto': usuarios.find(u => u.rol === 'admin')
+            };
+            
+            document.getElementById('debugInfo').textContent = JSON.stringify(info, null, 2);
+        }
+
+        // Mostrar debug al cargar
+        window.addEventListener('DOMContentLoaded', () => {
+            mostrarDebug();
+            document.getElementById('status2').innerHTML = 
+                '<span style="color: #4dabf7;">→ Paso 2: Recarga la página después de crear el usuario</span>';
+        });
+    </script>
+</body>
+</html>

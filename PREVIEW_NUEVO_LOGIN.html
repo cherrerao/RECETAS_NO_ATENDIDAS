@@ -1,0 +1,386 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Nuevo Login - Sistema de Recetas</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 30px 20px;
+        }
+
+        .container {
+            max-width: 1000px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 15px;
+            padding: 40px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+        }
+
+        h1 {
+            color: #667eea;
+            text-align: center;
+            margin-bottom: 10px;
+            font-size: 2.5em;
+        }
+
+        .subtitle {
+            text-align: center;
+            color: #666;
+            margin-bottom: 40px;
+            font-size: 1.1em;
+        }
+
+        .content {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 40px;
+        }
+
+        .section {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .section h2 {
+            color: #667eea;
+            margin-bottom: 20px;
+            padding-bottom: 10px;
+            border-bottom: 3px solid #667eea;
+            font-size: 1.5em;
+        }
+
+        .login-preview {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border-radius: 12px;
+            padding: 30px;
+            color: white;
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+
+        .login-title {
+            font-size: 1.8em;
+            text-align: center;
+            margin-bottom: 10px;
+        }
+
+        .login-subtitle {
+            text-align: center;
+            opacity: 0.9;
+            margin-bottom: 20px;
+            font-size: 0.95em;
+        }
+
+        .form-group {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .form-group label {
+            margin-bottom: 8px;
+            font-weight: 600;
+            font-size: 0.95em;
+        }
+
+        .form-group select,
+        .form-group input {
+            padding: 12px;
+            border: 2px solid rgba(255, 255, 255, 0.3);
+            border-radius: 6px;
+            font-size: 0.95em;
+            background: white;
+            color: #333;
+            font-family: inherit;
+        }
+
+        .form-group select:focus,
+        .form-group input:focus {
+            outline: none;
+            border-color: white;
+            box-shadow: 0 0 0 3px rgba(255, 255, 255, 0.2);
+        }
+
+        .btn-submit {
+            background: white;
+            color: #667eea;
+            border: none;
+            padding: 14px;
+            border-radius: 6px;
+            font-weight: 600;
+            font-size: 1.05em;
+            cursor: pointer;
+            transition: all 0.3s;
+            margin-top: 10px;
+        }
+
+        .btn-submit:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
+        }
+
+        .info-box {
+            background: white;
+            border-left: 4px solid #667eea;
+            padding: 12px 15px;
+            border-radius: 4px;
+            font-size: 0.9em;
+            text-align: center;
+            opacity: 0.95;
+            margin-top: 15px;
+        }
+
+        .steps {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+
+        .step {
+            display: flex;
+            gap: 15px;
+            padding: 15px;
+            background: #f8f9fa;
+            border-radius: 8px;
+            border-left: 4px solid #667eea;
+        }
+
+        .step-number {
+            flex-shrink: 0;
+            width: 40px;
+            height: 40px;
+            background: #667eea;
+            color: white;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            font-size: 1.2em;
+        }
+
+        .step-content {
+            flex: 1;
+        }
+
+        .step-title {
+            font-weight: 600;
+            color: #333;
+            margin-bottom: 5px;
+        }
+
+        .step-description {
+            color: #666;
+            font-size: 0.95em;
+        }
+
+        .code {
+            background: #f5f5f5;
+            padding: 2px 6px;
+            border-radius: 3px;
+            color: #d63384;
+            font-family: 'Courier New', monospace;
+            font-weight: 600;
+        }
+
+        .benefits {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+            margin-top: 20px;
+        }
+
+        .benefit {
+            background: #d4edda;
+            border-left: 4px solid #28a745;
+            padding: 12px;
+            border-radius: 6px;
+            color: #155724;
+            font-size: 0.9em;
+        }
+
+        .benefit:before {
+            content: "✓ ";
+            font-weight: bold;
+            color: #28a745;
+        }
+
+        .example-users {
+            background: #f8f9fa;
+            border-radius: 8px;
+            padding: 15px;
+            margin-top: 20px;
+        }
+
+        .example-users h3 {
+            color: #667eea;
+            margin-bottom: 10px;
+            font-size: 1.1em;
+        }
+
+        .user-item {
+            padding: 10px 0;
+            border-bottom: 1px solid #ddd;
+            font-size: 0.9em;
+        }
+
+        .user-item:last-child {
+            border-bottom: none;
+        }
+
+        .user-item strong {
+            color: #333;
+        }
+
+        @media (max-width: 768px) {
+            .content {
+                grid-template-columns: 1fr;
+            }
+
+            h1 {
+                font-size: 1.8em;
+            }
+
+            .benefits {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔐 Nuevo Login</h1>
+        <p class="subtitle">Con Selector de Centros</p>
+
+        <div class="content">
+            <!-- PREVIEW -->
+            <div class="section">
+                <h2>📱 Vista Previa</h2>
+
+                <div class="login-preview">
+                    <div class="login-title">🔐 Acceso al Sistema</div>
+                    <div class="login-subtitle">Registro de Recetas No Atendidas</div>
+
+                    <div class="form-group">
+                        <label>🏥 Selecciona tu Centro:</label>
+                        <select disabled>
+                            <option>-- Selecciona un centro --</option>
+                            <option selected>🏥 Centro de Salud Bellavista</option>
+                            <option>🏥 Centro de Salud Carmen de la Legua</option>
+                            <option>🏥 Centro de Salud Callao</option>
+                            <option>🏥 ADMINISTRACIÓN</option>
+                        </select>
+                    </div>
+
+                    <div class="form-group">
+                        <label>👤 Usuario:</label>
+                        <input type="text" placeholder="Ingresa tu usuario" disabled value="bellavista">
+                    </div>
+
+                    <div class="form-group">
+                        <label>🔑 Contraseña:</label>
+                        <input type="password" placeholder="Ingresa tu contraseña" disabled value="••••••">
+                    </div>
+
+                    <button class="btn-submit">INGRESAR</button>
+
+                    <div class="info-box">
+                        <strong>Demo Admin:</strong> admin / admin123
+                    </div>
+                </div>
+            </div>
+
+            <!-- INSTRUCCIONES -->
+            <div class="section">
+                <h2>📋 Cómo Usar</h2>
+
+                <div class="steps">
+                    <div class="step">
+                        <div class="step-number">1</div>
+                        <div class="step-content">
+                            <div class="step-title">Abre la página</div>
+                            <div class="step-description">Ingresa a <span class="code">index.html</span></div>
+                        </div>
+                    </div>
+
+                    <div class="step">
+                        <div class="step-number">2</div>
+                        <div class="step-content">
+                            <div class="step-title">Selecciona tu centro</div>
+                            <div class="step-description">Haz clic en el dropdown y elige tu centro</div>
+                        </div>
+                    </div>
+
+                    <div class="step">
+                        <div class="step-number">3</div>
+                        <div class="step-content">
+                            <div class="step-title">Ingresa tu usuario</div>
+                            <div class="step-description">Escribe tu nombre de usuario asignado</div>
+                        </div>
+                    </div>
+
+                    <div class="step">
+                        <div class="step-number">4</div>
+                        <div class="step-content">
+                            <div class="step-title">Ingresa tu contraseña</div>
+                            <div class="step-description">Escribe tu contraseña asignada</div>
+                        </div>
+                    </div>
+
+                    <div class="step">
+                        <div class="step-number">5</div>
+                        <div class="step-content">
+                            <div class="step-title">Haz clic en INGRESAR</div>
+                            <div class="step-description">Se validará y accederás al sistema</div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="benefits">
+                    <div class="benefit">Más intuitivo</div>
+                    <div class="benefit">Ve centros disponibles</div>
+                    <div class="benefit">Evita confusión</div>
+                    <div class="benefit">Mejor seguridad</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- EJEMPLOS -->
+        <div class="example-users">
+            <h3>👥 Ejemplos de Usuarios</h3>
+            <div class="user-item">
+                <strong>Centro Bellavista:</strong><br>
+                Usuario: <span class="code">bellavista</span> | 
+                Contraseña: <span class="code">pass123</span>
+            </div>
+            <div class="user-item">
+                <strong>Centro Carmen:</strong><br>
+                Usuario: <span class="code">carmen</span> | 
+                Contraseña: <span class="code">pass456</span>
+            </div>
+            <div class="user-item">
+                <strong>Centro Callao:</strong><br>
+                Usuario: <span class="code">callao</span> | 
+                Contraseña: <span class="code">pass789</span>
+            </div>
+            <div class="user-item">
+                <strong>Administrador:</strong><br>
+                Centro: <span class="code">ADMINISTRACIÓN</span> |
+                Usuario: <span class="code">admin</span> | 
+                Contraseña: <span class="code">admin123</span>
+            </div>
+        </div>
+    </div>
+</body>
+</html>
