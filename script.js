@@ -93,10 +93,96 @@ function inicializarAplicacion() {
     cargarDatos();
     agregarEventListeners();
     agregarEventListenersAdmin();
+    aplicarPermisosEstablecimientos();
     try { 
         renderMedicamentosTable(); 
     } catch(e) { 
         console.warn('No se pudo renderizar tabla de medicamentos:', e);
+    }
+}
+
+// Aplicar permisos y valores por defecto para establecimientos según rol
+function aplicarPermisosEstablecimientos() {
+    try {
+        // Obtener centro del usuario si existe (admin o no)
+        const centroUsuario = (auth.obtenerCentroActual && auth.obtenerCentroActual()) || '';
+
+        // Buscar la RED que contiene al centro del usuario
+        let redNombre = '';
+        if (centroUsuario && CATALOGO_ESTABLECIMIENTOS.redes && Array.isArray(CATALOGO_ESTABLECIMIENTOS.redes)) {
+            for (const r of CATALOGO_ESTABLECIMIENTOS.redes) {
+                if (Array.isArray(r.establecimientos) && r.establecimientos.includes(centroUsuario)) {
+                    redNombre = r.nombre;
+                    break;
+                }
+            }
+        }
+
+        // Main form: si hay centroUsuario, pre-seleccionar red y establecimiento
+        const mainRed = document.getElementById('red');
+        const mainEst = document.getElementById('establecimiento');
+        if (mainRed && redNombre) {
+            mainRed.value = redNombre;
+        }
+        if (mainEst && centroUsuario) {
+            mainEst.value = centroUsuario;
+        }
+
+        // Si es admin, mantener controles habilitados (pero respetar preselección)
+        if (auth.esAdmin && auth.esAdmin()) {
+            if (mainRed) {
+                mainRed.disabled = false;
+                mainRed.removeAttribute('aria-disabled');
+            }
+            if (mainEst) {
+                mainEst.disabled = false;
+                mainEst.readOnly = false;
+                mainEst.removeAttribute('aria-disabled');
+                mainEst.removeAttribute('title');
+            }
+            // No mostrar la lista principal automáticamente (permanece oculta por defecto)
+            return;
+        }
+
+        // Usuario normal: deshabilitar cambios y ocultar controles de admin
+        if (!centroUsuario) return;
+
+        if (mainRed) {
+            mainRed.disabled = true;
+            mainRed.setAttribute('aria-disabled', 'true');
+        }
+        if (mainEst) {
+            mainEst.disabled = true;
+            mainEst.readOnly = true;
+            mainEst.setAttribute('aria-disabled', 'true');
+            mainEst.setAttribute('title', 'Establecimiento asignado por su usuario');
+        }
+        // Actualizar estructuras internas
+        actualizarEstablecimientos();
+
+        // Admin modal inputs: ocultar selects y listas, colocar centro por defecto
+        const newRed = document.getElementById('newRed');
+        const editRed = document.getElementById('editRed');
+        const newCentro = document.getElementById('newCentro');
+        const editCentro = document.getElementById('editCentro');
+        const listaAdmin = document.getElementById('listaEstablecimientosAdmin');
+        const listaEdit = document.getElementById('listaEstablecimientosEditarBox');
+
+        if (newRed) newRed.style.display = 'none';
+        if (editRed) editRed.style.display = 'none';
+        if (listaAdmin) listaAdmin.style.display = 'none';
+        if (listaEdit) listaEdit.style.display = 'none';
+
+        if (newCentro) {
+            newCentro.value = centroUsuario;
+            newCentro.disabled = true;
+        }
+        if (editCentro) {
+            editCentro.value = centroUsuario;
+            editCentro.disabled = true;
+        }
+    } catch (e) {
+        console.warn('Error aplicando permisos de establecimientos:', e);
     }
 }
 
@@ -742,6 +828,8 @@ function cargarCatalogo() {
         });
         editRed.addEventListener('change', () => actualizarEstablecimientosAdmin('edit'));
     }
+
+    // Lista principal permanece oculta por defecto; se renderiza solo para admin bajo demanda
 }
 
 // Filtrar y mostrar sugerencias de productos (con debounce)
@@ -969,6 +1057,8 @@ function actualizarEstablecimientos() {
             option.textContent = establecimiento;
             selectEstablecimiento.appendChild(option);
         });
+        // Mostrar lista visible para la red seleccionada
+        try { renderListaEstablecimientos(redSeleccionada, 'listaEstablecimientosMain'); } catch (e) {}
         return;
     }
 
@@ -1001,6 +1091,8 @@ function actualizarEstablecimientos() {
                 statusEl.textContent = `Catálogo cargado: ${window.ESTABLECIMIENTOS_TOTAL || 0} establecimientos`;
             }
         }
+        // Mostrar lista visible actualizada para la red o vacía
+        try { renderListaEstablecimientos(redSeleccionada || null, 'listaEstablecimientosMain'); } catch (e) {}
     }
 }
 
@@ -2474,6 +2566,46 @@ function obtenerTodosLosEstablecimientos() {
     return establecimientos.sort();
 }
 
+// Renderizar lista visible de establecimientos en un contenedor
+function renderListaEstablecimientos(redNombre, containerId) {
+    const container = document.getElementById(containerId);
+    if (!container) return;
+
+    let lista = [];
+    if (redNombre) {
+        const redObj = CATALOGO_ESTABLECIMIENTOS.redes.find(r => r.nombre === redNombre);
+        lista = redObj && Array.isArray(redObj.establecimientos) ? redObj.establecimientos : [];
+    } else {
+        lista = obtenerTodosLosEstablecimientos();
+    }
+
+    if (!lista || lista.length === 0) {
+        container.innerHTML = '<div style="color:#666;">No hay establecimientos para mostrar.</div>';
+        return;
+    }
+
+    // Construir lista UL
+    const items = lista.map(est => `
+        <li style="padding:6px 8px; border-bottom:1px solid #f1f1f1; cursor:pointer; list-style:none;">
+            <span onclick="handleClickListaEstablecimiento(event, '${est.replace(/'/g, "\\'")}', '${containerId}')" style="display:inline-block; width:100%;">🏥 ${est}</span>
+        </li>
+    `).join('');
+
+    container.innerHTML = `<ul style="margin:0; padding:0;">${items}</ul>`;
+}
+
+// Manejar clicks en la lista visible para asignar al input correcto
+function handleClickListaEstablecimiento(event, establecimiento, containerId) {
+    // Determinar contexto por containerId
+    if (containerId === 'listaEstablecimientosMain') {
+        seleccionarEstablecimientoMain(establecimiento);
+    } else if (containerId === 'listaEstablecimientosAdmin') {
+        seleccionarEstablecimiento(establecimiento);
+    } else if (containerId === 'listaEstablecimientosEditarBox') {
+        seleccionarEstablecimientoEditar(establecimiento);
+    }
+}
+
 // Filtrar y mostrar sugerencias de establecimientos en el formulario de crear usuario
 function filtrarEstablecimientosAdmin() {
     const inputCentro = document.getElementById('newCentro');
@@ -2567,6 +2699,9 @@ function actualizarEstablecimientosAdmin(mode) {
         sugerenciasDiv.innerHTML = '';
         sugerenciasDiv.classList.remove('active');
     }
+    // Renderizar lista visible para este modo
+    const containerId = mode === 'edit' ? 'listaEstablecimientosEditarBox' : 'listaEstablecimientosAdmin';
+    try { renderListaEstablecimientos(selectedRed || null, containerId); } catch (e) {}
 }
 
 // Cargar lista de usuarios
