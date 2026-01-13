@@ -4,6 +4,8 @@
 const STORAGE_KEY = 'recetas_no_atendidas';
 const MAX_SUGERENCIAS = 15;
 const DEBOUNCE_DELAY = 300; // ms para búsquedas
+// URL del Web App de Apps Script (para integrarlo con AppSheet/Google Sheets)
+const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbyfRvelg1LV7vUynZbS9mrU6SlePSjgJ2mIBcgQJ0xWaDbMlvN_VUJEJjD9Sny0qXbv/exec';
 
 // Variable global para almacenar catálogo cargado
 let CATALOGO_ESTABLECIMIENTOS = {
@@ -60,40 +62,58 @@ const debounce = (func, wait) => {
 // ====================================
 // INICIALIZACIÓN
 // ====================================
-document.addEventListener('DOMContentLoaded', () => {
+document.addEventListener('DOMContentLoaded', async () => {
     // Inicializar cache de DOM
     DOMCache.init();
-    
-    // Verificar autenticación
-    if (!auth.estaAutenticado()) {
-        mostrarPantallaLogin();
-        return;
+
+    // Cargar usuarios desde Google Sheets antes de cualquier login
+    try {
+        await cargarUsuariosDesdeAppScript();
+    } catch (e) {
+        console.warn('No se pudieron cargar usuarios al inicio:', e);
     }
 
-    // Si está autenticado, cargar la aplicación
-    mostrarAplicacion();
-    
-    // Cargar catálogos en paralelo
+    // Mostrar pantalla correspondiente (pero sin detener carga de catálogos)
+    if (!auth.estaAutenticado()) {
+        mostrarPantallaLogin();
+    } else {
+        mostrarAplicacion();
+    }
+
+    // Cargar catálogos en paralelo (siempre, incluso en pantalla de login)
     Promise.all([
         cargarCatalogoDesdeExcel(),
         cargarMedicamentosDesdeJSON(),
         cargarTiposServicioDesdeExcel()
     ]).then(() => {
+        // Refrescar centros en pantalla de login (si visible)
+        try { cargarCentrosEnLogin(); } catch {}
         inicializarAplicacion();
     }).catch(error => {
         console.error("Error al cargar catálogos:", error);
         mostrarNotificacion('Error al cargar algunos catálogos. Verifica la consola.', 'warning');
+        try { cargarCentrosEnLogin(); } catch {}
         inicializarAplicacion();
     });
 });
 
 // Inicializar aplicación después de cargar catálogos
-function inicializarAplicacion() {
+async function inicializarAplicacion() {
     establecerFechaHoy();
-    cargarDatos();
+    await cargarDatos(); // Ahora es async para esperar a Google Sheets
+    cargarMapaCodPreGlobal(); // Cargar mapa COD PRE al inicio
+    // Asegurar que los usuarios estén actualizados en memoria
+    try { await cargarUsuariosDesdeAppScript(); } catch {}
     agregarEventListeners();
     agregarEventListenersAdmin();
     aplicarPermisosEstablecimientos();
+    
+    // Sincronizar registros pendientes si existen
+    sincronizarColaPendiente();
+    
+    // Reintentar sincronización cada 30 segundos
+    setInterval(sincronizarColaPendiente, 30000);
+    
     try { 
         renderMedicamentosTable(); 
     } catch(e) { 
@@ -101,11 +121,68 @@ function inicializarAplicacion() {
     }
 }
 
+// Sincronizar registros que no se han enviado a Google Sheets
+async function sincronizarColaPendiente() {
+    try {
+        const COLA_KEY = 'recetas_cola_sync';
+        const colaGuardada = localStorage.getItem(COLA_KEY);
+        
+        if (!colaGuardada) return; // No hay nada que sincronizar
+        
+        const cola = JSON.parse(colaGuardada);
+        if (cola.length === 0) return;
+        
+        console.log(`🔄 Sincronizando ${cola.length} registros pendientes...`);
+        
+        const colaPendiente = [];
+        
+        for (const payload of cola) {
+            try {
+                const resp = await fetch(APPS_SCRIPT_URL, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+                
+                let result = null;
+                try { result = await resp.json(); } catch {}
+                const ok = (result && (result.status === 'ok' || result.result === 'ok' || result.success === true));
+                
+                if (ok) {
+                    console.log(`✅ Sincronizado: ${payload.producto}`);
+                } else {
+                    console.warn(`⚠️ Respuesta no confirmada para ${payload.producto}, reintentando...`);
+                    colaPendiente.push(payload);
+                }
+            } catch (e) {
+                console.warn(`⚠️ Error sincronizando ${payload.producto}:`, e.message);
+                colaPendiente.push(payload);
+            }
+        }
+        
+        if (colaPendiente.length === 0) {
+            // Éxito: limpiar cola
+            localStorage.removeItem(COLA_KEY);
+            console.log('✅ Toda la cola ha sido sincronizada');
+        } else {
+            // Guardar pendientes restantes
+            localStorage.setItem(COLA_KEY, JSON.stringify(colaPendiente));
+            console.log(`⏳ ${colaPendiente.length} registros aún pendientes`);
+        }
+        
+    } catch (e) {
+        console.warn('Error en sincronización de cola:', e);
+    }
+}
+
 // Aplicar permisos y valores por defecto para establecimientos según rol
 function aplicarPermisosEstablecimientos() {
+    console.log('🔐 === APLICANDO PERMISOS ===');
     try {
         // Obtener centro del usuario si existe (admin o no)
         const centroUsuario = (auth.obtenerCentroActual && auth.obtenerCentroActual()) || '';
+        const esAdminFlag = auth.esAdmin && auth.esAdmin();
+        console.log('✓ centroUsuario:', centroUsuario, '| esAdmin:', esAdminFlag);
 
         // Buscar la RED que contiene al centro del usuario
         let redNombre = '';
@@ -128,8 +205,10 @@ function aplicarPermisosEstablecimientos() {
             mainEst.value = centroUsuario;
         }
 
-        // Si es admin, mantener controles habilitados (pero respetar preselección)
-        if (auth.esAdmin && auth.esAdmin()) {
+        // CONTROLES DEL FORMULARIO PRINCIPAL
+        if (esAdminFlag) {
+            // Admin: puede seleccionar cualquier red/establecimiento
+            console.log('👨‍💼 Configurando permisos para ADMIN');
             if (mainRed) {
                 mainRed.disabled = false;
                 mainRed.removeAttribute('aria-disabled');
@@ -140,27 +219,34 @@ function aplicarPermisosEstablecimientos() {
                 mainEst.removeAttribute('aria-disabled');
                 mainEst.removeAttribute('title');
             }
-            // No mostrar la lista principal automáticamente (permanece oculta por defecto)
-            return;
+        } else {
+            // Usuario de centro: solo su centro
+            console.log('🏥 Configurando permisos para USUARIO DE CENTRO');
+            if (!centroUsuario) return; // Sin centro asignado, no hacer nada
+            
+            if (mainRed) {
+                mainRed.disabled = true;
+                mainRed.setAttribute('aria-disabled', 'true');
+            }
+            if (mainEst) {
+                mainEst.disabled = true;
+                mainEst.readOnly = true;
+                mainEst.setAttribute('aria-disabled', 'true');
+                mainEst.setAttribute('title', 'Establecimiento asignado por su usuario');
+            }
+            
+            // Ocultar el dropdown de sugerencias de establecimientos
+            const sugerenciasMain = document.getElementById('sugerenciasEstablecimientosMain');
+            if (sugerenciasMain) {
+                sugerenciasMain.style.display = 'none';
+                sugerenciasMain.classList.remove('active');
+            }
+            
+            // Actualizar estructuras internas
+            actualizarEstablecimientos();
         }
 
-        // Usuario normal: deshabilitar cambios y ocultar controles de admin
-        if (!centroUsuario) return;
-
-        if (mainRed) {
-            mainRed.disabled = true;
-            mainRed.setAttribute('aria-disabled', 'true');
-        }
-        if (mainEst) {
-            mainEst.disabled = true;
-            mainEst.readOnly = true;
-            mainEst.setAttribute('aria-disabled', 'true');
-            mainEst.setAttribute('title', 'Establecimiento asignado por su usuario');
-        }
-        // Actualizar estructuras internas
-        actualizarEstablecimientos();
-
-        // Admin modal inputs: ocultar selects y listas, colocar centro por defecto
+        // CONTROLES DEL MODAL DE USUARIOS (aplica a admin y usuario)
         const newRed = document.getElementById('newRed');
         const editRed = document.getElementById('editRed');
         const newCentro = document.getElementById('newCentro');
@@ -168,18 +254,54 @@ function aplicarPermisosEstablecimientos() {
         const listaAdmin = document.getElementById('listaEstablecimientosAdmin');
         const listaEdit = document.getElementById('listaEstablecimientosEditarBox');
 
-        if (newRed) newRed.style.display = 'none';
-        if (editRed) editRed.style.display = 'none';
-        if (listaAdmin) listaAdmin.style.display = 'none';
-        if (listaEdit) listaEdit.style.display = 'none';
+        if (esAdminFlag) {
+            // Admin: MOSTRAR selectores de red/centro en modal
+            console.log('👨‍💼 Modal: MOSTRANDO selectores de red/centro para ADMIN');
+            if (newRed) {
+                newRed.style.display = 'block';
+                newRed.disabled = false;
+            }
+            if (editRed) {
+                editRed.style.display = 'block';
+                editRed.disabled = false;
+            }
+            if (newCentro) {
+                newCentro.disabled = false;
+            }
+            if (editCentro) {
+                editCentro.disabled = false;
+            }
+            if (listaAdmin) listaAdmin.style.display = 'block';
+            if (listaEdit) listaEdit.style.display = 'block';
+        } else {
+            // Usuario de centro: OCULTAR selectores de red/centro, usar el suyo
+            console.log('🏥 Modal: OCULTANDO selectores de red/centro para usuario');
+            if (newRed) newRed.style.display = 'none';
+            if (editRed) editRed.style.display = 'none';
+            if (listaAdmin) listaAdmin.style.display = 'none';
+            if (listaEdit) listaEdit.style.display = 'none';
 
-        if (newCentro) {
-            newCentro.value = centroUsuario;
-            newCentro.disabled = true;
+            if (newCentro) {
+                newCentro.value = centroUsuario;
+                newCentro.disabled = true;
+            }
+            if (editCentro) {
+                editCentro.value = centroUsuario;
+                editCentro.disabled = true;
+            }
         }
-        if (editCentro) {
-            editCentro.value = centroUsuario;
-            editCentro.disabled = true;
+        
+        // BOTÓN LIMPIAR DATOS
+        const btnLimpiar = document.getElementById('btnLimpiar');
+        console.log('🔍 btnLimpiar existe:', !!btnLimpiar, '| esAdmin:', esAdminFlag);
+        if (btnLimpiar) {
+            if (esAdminFlag) {
+                console.log('✅ MOSTRANDO botón "Limpiar Datos" para ADMIN');
+                btnLimpiar.style.display = 'inline-block';
+            } else {
+                console.log('❌ OCULTANDO botón "Limpiar Datos" para usuario');
+                btnLimpiar.style.display = 'none';
+            }
         }
     } catch (e) {
         console.warn('Error aplicando permisos de establecimientos:', e);
@@ -191,6 +313,55 @@ function establecerFechaHoy() {
     const fechaInput = document.getElementById('fecha_registro');
     const hoy = new Date().toISOString().split('T')[0];
     fechaInput.value = hoy;
+}
+
+// Cargar mapa COD PRE al inicio (desde catalogo-redes.xlsx)
+async function cargarMapaCodPreGlobal() {
+    try {
+        const rutaCatalogo = './catalogo-redes.xlsx';
+        const resp = await fetch(rutaCatalogo);
+        if (!resp || !resp.ok) {
+            console.warn('No se pudo cargar catalogo-redes.xlsx para COD PRE');
+            window.mapaCodPre = {};
+            return;
+        }
+        const buf = await resp.arrayBuffer();
+        const wbCatalog = XLSX.read(buf, { type: 'array' });
+        const sh = wbCatalog.Sheets[wbCatalog.SheetNames[0]];
+        const rows = XLSX.utils.sheet_to_json(sh, { header: 1, defval: '' });
+        
+        const mapaCodPre = {};
+        if (rows && rows.length > 0) {
+            const headerRow = rows[0].map(h => (h || '').toString().toUpperCase());
+            let idxEst = -1, idxCodPre = -1;
+            
+            // Buscar columnas en las primeras 5 filas
+            for (let r = 0; r < Math.min(5, rows.length); r++) {
+                const row = rows[r].map(c => (c || '').toString().toUpperCase());
+                for (let i = 0; i < row.length; i++) {
+                    const h = row[i];
+                    if (idxEst === -1 && (h.includes('ESTABLECIMIENTO') || h.includes('CENTRO') || h.includes('ESTABLE'))) idxEst = i;
+                    if (idxCodPre === -1 && (h.includes('COD PRE') || h.includes('CODPRE') || h.includes('COD'))) idxCodPre = i;
+                }
+                if (idxEst !== -1 && idxCodPre !== -1) break;
+            }
+            
+            if (idxEst !== -1 && idxCodPre !== -1) {
+                for (let r = 1; r < rows.length; r++) {
+                    const row = rows[r];
+                    const nombre = (row[idxEst] || '').toString().trim().toUpperCase();
+                    const cod = (row[idxCodPre] || '').toString().trim();
+                    if (nombre && cod) mapaCodPre[nombre] = cod;
+                }
+            }
+        }
+        
+        window.mapaCodPre = mapaCodPre;
+        console.log('✓ Mapa COD PRE cargado:', Object.keys(mapaCodPre).length, 'establecimientos');
+    } catch (e) {
+        console.warn('Error al cargar mapa COD PRE:', e && e.message ? e.message : e);
+        window.mapaCodPre = {};
+    }
 }
 
 // Cargar catálogo desde el archivo Excel de SISMED
@@ -987,6 +1158,11 @@ function actualizarEstablecimientos() {
 
 // Filtrar y mostrar sugerencias para el campo establecimiento principal
 function filtrarEstablecimientosMain() {
+    // Si no es admin, no mostrar sugerencias
+    if (!auth.esAdmin()) {
+        return;
+    }
+    
     const input = document.getElementById('establecimiento');
     const sugerenciasDiv = document.getElementById('sugerenciasEstablecimientosMain');
 
@@ -1024,6 +1200,11 @@ function filtrarEstablecimientosMain() {
 }
 
 function mostrarTodosEstablecimientosMain() {
+    // Si no es admin, no mostrar sugerencias
+    if (!auth.esAdmin()) {
+        return;
+    }
+    
     const input = document.getElementById('establecimiento');
     const sugerenciasDiv = document.getElementById('sugerenciasEstablecimientosMain');
     if (!input || !sugerenciasDiv) return;
@@ -1178,7 +1359,7 @@ function validarFormularioRegistro() {
 }
 
 // Agregar nuevo registro
-function agregarRegistro(e) {
+async function agregarRegistro(e) {
     e.preventDefault();
 
     // Validar permisos
@@ -1237,12 +1418,99 @@ function agregarRegistro(e) {
         let datos = obtenerDatos();
         datos.push(registro);
 
-        // Guardar datos
+        // Guardar datos localmente
         localStorage.setItem(STORAGE_KEY, JSON.stringify(datos));
+
+        // Guardar en Google Sheets (Apps Script Web App)
+        // Obtener COD PRE del establecimiento si existe en el catálogo cargado
+        let cod_pre = '';
+        const keyEst = (registro.establecimiento || '').toString().trim().toUpperCase();
+        if (window.mapaCodPre && window.mapaCodPre[keyEst]) {
+            const codPreRaw = window.mapaCodPre[keyEst];
+            // Formatear a 5 dígitos: 1 -> 00001
+            const numCodPre = parseInt(codPreRaw, 10);
+            cod_pre = isNaN(numCodPre) ? codPreRaw : String(numCodPre).padStart(5, '0');
+        }
+
+        // Separar código y nombre del producto si es posible
+        let codigo_producto = '';
+        let producto_nombre = registro.producto;
+        const prodMatch = (registro.producto || '').match(/^(?:\[)?(\d{3,})(?:\])?\s*-?\s*(.*)$/);
+        if (prodMatch) {
+            // Formatear código de producto a 5 dígitos: 91 -> 00091
+            const numCodProd = parseInt(prodMatch[1], 10);
+            codigo_producto = isNaN(numCodProd) ? prodMatch[1] : String(numCodProd).padStart(5, '0');
+            producto_nombre = prodMatch[2] || '';
+        }
+
+        (async () => {
+            const payload = {
+                cod_pre: cod_pre,
+                establecimiento: registro.establecimiento,
+                codigo_producto: codigo_producto,
+                producto: producto_nombre,
+                tipo_servicio: registro.tipo_servicio,
+                cantidad_requerida: registro.cantidad_requerida,
+                cantidad_disponible: registro.cantidad_disponible,
+                demanda_no_satisfecha: registro.demanda_no_satisfecha,
+                porcentaje_cobertura: registro.cobertura,
+                fecha_registro: registro.fecha,
+                observaciones: registro.observaciones,
+                usuario_registra: registro.usuario_registra,
+                fecha_registro_sistema: registro.fecha_registro_sistema
+            };
+
+            const envioOk = await enviarRegistroAppsScript(payload);
+            if (envioOk === true) {
+                mostrarNotificacion('Receta guardada en Google Sheets (Apps Script)', 'success');
+            } else if (envioOk === 'nocors') {
+                mostrarNotificacion('Envío realizado sin confirmación (CORS). Verifica la hoja.', 'info');
+            } else {
+                mostrarNotificacion('Receta guardada localmente, pero no en Google Sheets', 'warning');
+            }
+        })();
 
         // Limpiar formulario
         DOMCache.get('formRegistro')?.reset();
         establecerFechaHoy();
+
+        // Restaurar red y establecimiento para usuarios no-admin
+        if (!auth.esAdmin()) {
+            const centroUsuario = auth.obtenerCentroActual();
+            
+            if (centroUsuario) {
+                // Buscar la RED que contiene al centro del usuario
+                let redNombre = '';
+                if (CATALOGO_ESTABLECIMIENTOS.redes && Array.isArray(CATALOGO_ESTABLECIMIENTOS.redes)) {
+                    for (const r of CATALOGO_ESTABLECIMIENTOS.redes) {
+                        if (Array.isArray(r.establecimientos) && r.establecimientos.includes(centroUsuario)) {
+                            redNombre = r.nombre;
+                            break;
+                        }
+                    }
+                }
+                
+                // Restaurar red si existe
+                const selectRed = document.getElementById('red');
+                if (selectRed && redNombre) {
+                    selectRed.value = redNombre;
+                    selectRed.disabled = true;
+                    selectRed.setAttribute('aria-disabled', 'true');
+                    // Disparar evento change para actualizar lista de establecimientos
+                    selectRed.dispatchEvent(new Event('change'));
+                }
+                
+                // Restaurar establecimiento
+                const inputEstablecimiento = document.getElementById('establecimiento');
+                if (inputEstablecimiento) {
+                    inputEstablecimiento.value = centroUsuario;
+                    inputEstablecimiento.disabled = true;
+                    inputEstablecimiento.readOnly = true;
+                    inputEstablecimiento.setAttribute('aria-disabled', 'true');
+                    inputEstablecimiento.setAttribute('title', 'Establecimiento asignado por su usuario');
+                }
+            }
+        }
 
         // Cerrar sugerencias si están abiertas
         if (DOMCache.sugerenciasProductos) {
@@ -1250,12 +1518,227 @@ function agregarRegistro(e) {
             DOMCache.sugerenciasProductos.innerHTML = '';
         }
 
-        // Actualizar tabla y estadísticas
-        cargarDatos();
-        mostrarNotificacion('Receta registrada exitosamente', 'success');
+        // Mostrar la nueva fila inmediatamente en la tabla
+        console.log('📊 Intentando agregar fila a tabla...');
+        agregarFilaATabla(registro);
+        
+        mostrarNotificacion('✓ Registro agregado correctamente', 'success');
+        
+        // Actualizar tabla y estadísticas (en segundo plano con delay)
+        // Esperamos un tiempo para que el usuario vea la nueva fila
+        setTimeout(() => {
+            cargarDatos().catch(error => {
+                console.error('Error actualizando datos:', error);
+            });
+        }, 1500);
     } catch (error) {
         console.error('Error al guardar registro:', error);
         mostrarNotificacion('Error al guardar el registro. Intenta nuevamente.', 'warning');
+    }
+}
+
+// Cargar usuarios desde Google Sheets via AppScript
+async function cargarUsuariosDesdeAppScript() {
+    try {
+        const url = `${APPS_SCRIPT_URL}?action=getUsers`;
+        // Importante: GET sin headers para evitar preflight/CORS
+        const resp = await fetch(url, { method: 'GET' });
+        
+        if (resp.ok) {
+            const result = await resp.json();
+            if (result.success && Array.isArray(result.usuarios)) {
+                window.USUARIOS_SISTEMA = result.usuarios;
+                console.log(`✓ ${result.usuarios.length} usuarios cargados desde Google Sheets`);
+                return result.usuarios;
+            }
+        }
+        
+        // Fallback: intentar vía POST action=getUsers
+        console.warn('GET usuarios no respondió, intentando POST ...');
+        try {
+            const resp2 = await fetch(APPS_SCRIPT_URL, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ action: 'getUsers' })
+            });
+            let result2 = null;
+            try { result2 = await resp2.json(); } catch {}
+            if (result2 && result2.success && Array.isArray(result2.usuarios)) {
+                window.USUARIOS_SISTEMA = result2.usuarios;
+                console.log(`✓ ${result2.usuarios.length} usuarios cargados (POST)`);
+                return result2.usuarios;
+            }
+        } catch (ePost) {
+            console.warn('POST usuarios falló:', ePost);
+        }
+        
+        // Fallback final: POST no-cors para forzar creación y luego reintentar GET
+        try {
+            await fetch(APPS_SCRIPT_URL, {
+                method: 'POST',
+                mode: 'no-cors',
+                headers: { 'Content-Type': 'text/plain' },
+                body: JSON.stringify({ action: 'getUsers' })
+            });
+            await new Promise(r => setTimeout(r, 1000));
+            const retry = await fetch(url, { method: 'GET' });
+            if (retry.ok) {
+                const result3 = await retry.json();
+                if (result3.success && Array.isArray(result3.usuarios)) {
+                    window.USUARIOS_SISTEMA = result3.usuarios;
+                    console.log(`✓ ${result3.usuarios.length} usuarios cargados (reintento)`);
+                    return result3.usuarios;
+                }
+            }
+        } catch (eNoCors) {
+            console.warn('Fallback no-cors usuarios falló:', eNoCors);
+        }
+        
+        console.warn('No se pudieron cargar usuarios desde Google Sheets');
+        return [];
+    } catch (error) {
+        console.error('Error al cargar usuarios:', error);
+        return [];
+    }
+}
+
+// Guardar usuario en Google Sheets via AppScript
+async function guardarUsuarioEnAppScript(usuario) {
+    try {
+        const payload = {
+            action: 'createUser',
+            usuario: usuario
+        };
+        
+        const resp = await fetch(APPS_SCRIPT_URL, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload)
+        });
+        
+        let result = null;
+        try { result = await resp.json(); } catch {}
+        const ok = (result && (result.status === 'ok' || result.success === true));
+        
+        if (ok) {
+            // Recargar usuarios para mantener sincronizado
+            await cargarUsuariosDesdeAppScript();
+            return true;
+        }
+        
+        throw new Error('Respuesta no válida del servidor');
+    } catch (err) {
+        // Fallback no-cors
+        try {
+            const payload = {
+                action: 'createUser',
+                usuario: usuario
+            };
+            
+            await fetch(APPS_SCRIPT_URL, {
+                method: 'POST',
+                mode: 'no-cors',
+                headers: { 'Content-Type': 'text/plain' },
+                body: JSON.stringify(payload)
+            });
+            
+            // Esperar un momento y recargar usuarios
+            await new Promise(resolve => setTimeout(resolve, 1000));
+            await cargarUsuariosDesdeAppScript();
+            return 'nocors';
+        } catch (e2) {
+            console.warn('Fallo al guardar usuario en Apps Script:', e2);
+            return false;
+        }
+    }
+}
+
+// Enviar registro al Apps Script con fallback CORS
+async function enviarRegistroAppsScript(payload) {
+    try {
+        console.log('📤 Enviando registro a Google Sheets via Apps Script...');
+        console.log('URL:', APPS_SCRIPT_URL);
+        console.log('Datos:', payload);
+        
+        const resp = await fetch(APPS_SCRIPT_URL, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload)
+        });
+        
+        console.log('Respuesta HTTP:', resp.status, resp.statusText);
+        
+        // Intentar leer JSON (Apps Script puede responder {status:'ok'} o {success:true})
+        let result = null;
+        try { result = await resp.json(); } catch {}
+        
+        console.log('Respuesta JSON:', result);
+        
+        const ok = (result && (result.status === 'ok' || result.result === 'ok' || result.success === true));
+        if (ok) {
+            console.log('✅ ENVIADO Y CONFIRMADO en Google Sheets');
+            return true;
+        }
+        
+        // Si no hay confirmación clara, pero respuesta 200, asumir envío sin confirmación
+        if (resp.ok) {
+            console.log('⚠️ Respuesta 200 pero sin confirmación explícita');
+            // Guardar en cola para reintentar
+            guardarEnColaSync(payload);
+            return 'nocors';
+        }
+        
+        // Error HTTP real
+        throw new Error(`HTTP ${resp.status}: ${resp.statusText}`);
+        
+    } catch (err) {
+        console.error('❌ ERROR en primer intento:', err.message);
+        
+        // Segundo intento: modo no-cors (sin validar respuesta)
+        try {
+            console.log('🔄 Reintentando con mode: no-cors...');
+            await fetch(APPS_SCRIPT_URL, {
+                method: 'POST',
+                mode: 'no-cors',
+                headers: { 'Content-Type': 'text/plain' },
+                body: JSON.stringify(payload)
+            });
+            
+            console.log('⚠️ ENVIADO en modo no-cors (sin confirmación)');
+            // Guardar en cola para sincronizar después
+            guardarEnColaSync(payload);
+            return 'nocors';
+            
+        } catch (e2) {
+            console.error('❌ FALLO TOTAL:', e2 && e2.message ? e2.message : e2);
+            
+            // Guardar en cola para reintentar después
+            guardarEnColaSync(payload);
+            return false;
+        }
+    }
+}
+
+// Guardar registro en cola si falla el envío a Google Sheets
+function guardarEnColaSync(payload) {
+    try {
+        const COLA_KEY = 'recetas_cola_sync';
+        let cola = [];
+        
+        const colaGuardada = localStorage.getItem(COLA_KEY);
+        if (colaGuardada) {
+            cola = JSON.parse(colaGuardada);
+        }
+        
+        // Agregar con timestamp
+        payload._timestampIntento = new Date().toISOString();
+        cola.push(payload);
+        
+        localStorage.setItem(COLA_KEY, JSON.stringify(cola));
+        console.log(`⏳ Guardado en cola de sincronización (${cola.length} items pendientes)`);
+        
+    } catch (e) {
+        console.warn('No se pudo guardar en cola:', e);
     }
 }
 
@@ -1265,12 +1748,126 @@ function obtenerDatos() {
     return datos ? JSON.parse(datos) : [];
 }
 
+// Cargar registros desde Google Sheets via AppScript
+async function cargarRegistrosDesdeAppScript() {
+    try {
+        console.log('=== INICIANDO CARGA DESDE GOOGLE SHEETS ===');
+        const url = `${APPS_SCRIPT_URL}?action=getRecetas`;
+        console.log('URL:', url);
+        
+        const timeoutPromise = new Promise((_, reject) => 
+            setTimeout(() => reject(new Error('Timeout')), 10000)
+        );
+        
+        const resp = await Promise.race([
+            fetch(url, { method: 'GET', cache: 'no-store' }),
+            timeoutPromise
+        ]);
+        
+        console.log('Respuesta HTTP:', resp.status);
+        
+        if (resp.ok) {
+            const result = await resp.json();
+            console.log('✅ Recibida respuesta:', result);
+            
+            if (result.success && Array.isArray(result.recetas)) {
+                console.log(`✅ ${result.recetas.length} registros cargados`);
+                return result.recetas;
+            } else {
+                console.warn('⚠️ Respuesta inválida');
+                return obtenerDatos();
+            }
+        } else {
+            console.error('❌ Error HTTP:', resp.status);
+            return obtenerDatos();
+        }
+        
+    } catch (error) {
+        console.error('❌ Error:', error);
+        return obtenerDatos();
+    }
+}
+
+// Variable global para almacenar datos filtrados
+let datosActualesFiltrados = [];
+
 // Cargar y mostrar datos
-function cargarDatos() {
-    const datos = obtenerDatos();
-    mostrarTabla(datos);
-    actualizarEstadisticas(datos);
-    actualizarProductosCriticos(datos);
+async function cargarDatos() {
+    try {
+        // Cargar todos los datos
+        let datos = await cargarRegistrosDesdeAppScript();
+        
+        if (!Array.isArray(datos)) {
+            datos = [];
+        }
+        
+        console.log('📊 Total de registros cargados:', datos.length);
+        
+        // Obtener usuario actual
+        const usuarioActual = auth.obtenerUsuarioActual && auth.obtenerUsuarioActual();
+        console.log('👤 Usuario actual:', usuarioActual);
+        console.log('  - Usuario:', usuarioActual?.usuario);
+        console.log('  - Rol:', usuarioActual?.rol);
+        console.log('  - Centro:', usuarioActual?.centro);
+        
+        // APLICAR FILTRADO
+        let datosFiltrados = datos;
+        
+        if (usuarioActual) {
+            const esAdmin = usuarioActual.rol === 'admin';
+            const centroUsuario = usuarioActual.centro;
+            
+            console.log('🔐 esAdmin:', esAdmin, '| centroUsuario:', centroUsuario);
+            
+            if (esAdmin) {
+                // ADMIN: ve todo
+                console.log('✅ Es ADMIN - mostrando todos los', datos.length, 'registros');
+                datosFiltrados = datos;
+            } else if (centroUsuario) {
+                // USUARIO REGULAR: filtra por centro
+                const centroNorm = centroUsuario.trim().toUpperCase();
+                console.log('🔍 Filtrando por centro:', centroNorm);
+                
+                datosFiltrados = datos.filter(registro => {
+                    const estabNorm = (registro.establecimiento || '').trim().toUpperCase();
+                    const coincide = estabNorm === centroNorm;
+                    if (coincide) {
+                        console.log(`  ✓ "${registro.establecimiento}" coincide`);
+                    }
+                    return coincide;
+                });
+                
+                console.log(`🔍 Resultado del filtro: ${datosFiltrados.length}/${datos.length} registros`);
+            } else {
+                // Sin centro asignado
+                console.warn('⚠️ Usuario sin centro asignado - sin datos');
+                datosFiltrados = [];
+            }
+        } else {
+            console.warn('⚠️ No hay usuario autenticado');
+            datosFiltrados = [];
+        }
+        
+        // Guardar datos filtrados globalmente
+        datosActualesFiltrados = datosFiltrados;
+        
+        // Obtener estado admin para pasar a mostrarTabla
+        const esAdminFinal = usuarioActual && usuarioActual.rol === 'admin';
+        
+        console.log('🎬 LLAMANDO mostrarTabla con:');
+        console.log('  - datosFiltrados.length:', datosFiltrados.length);
+        console.log('  - esAdminFinal:', esAdminFinal);
+        console.log('  - esAdminFinal === true?:', esAdminFinal === true);
+        
+        mostrarTabla(datosFiltrados, esAdminFinal);
+        actualizarEstadisticas(datosFiltrados);
+        actualizarProductosCriticos(datosFiltrados);
+        
+    } catch (error) {
+        console.error('❌ Error:', error);
+        console.error('Stack:', error.stack);
+        mostrarNotificacion('Error al cargar datos', 'warning');
+    }
 }
 
 // Escapar HTML para prevenir XSS
@@ -1288,12 +1885,92 @@ function obtenerClaseDemanda(demandaNoSatisfecha, cantidadRequerida) {
     return porcentaje >= 0.3 ? 'demanda-alto' : 'demanda-medio';
 }
 
-// Mostrar tabla (optimizada)
-function mostrarTabla(datos) {
+// Función auxiliar para generar botón de eliminar (solo para admin)
+function generarBotonesAccion(registroId, esAdmin) {
+    console.log('🔍 Generando botones - registroId:', registroId, '| esAdmin:', esAdmin, '(tipo:', typeof esAdmin, ')');
+    
+    // Verificar explícitamente si esAdmin es true
+    if (esAdmin === true) {
+        console.log('✓ Es admin - mostrando botón eliminar');
+        return `<button class="btn btn-danger" onclick="eliminarRegistro(${registroId})" aria-label="Eliminar registro">🗑️ Eliminar</button>`;
+    }
+    
+    console.log('✗ No es admin (esAdmin=', esAdmin, ') - mostrando "Ver solo"');
+    return '<span style="color: #999; font-size: 0.9em;">Ver solo</span>';
+}
+
+// Agregar una fila a la tabla de inmediato (sin esperar cargarDatos)
+function agregarFilaATabla(registro) {
     const tbody = DOMCache.cuerpoTabla;
-    if (!tbody) return;
+    if (!tbody) {
+        console.warn('⚠️ No se pudo encontrar el tbody de la tabla');
+        return;
+    }
+    
+    console.log('✓ Agregando fila a tabla:', registro);
+    
+    // Obtener estado admin actual
+    const esAdmin = auth.esAdmin && auth.esAdmin();
+    console.log('🔐 esAdmin en agregarFilaATabla:', esAdmin, 'tipo:', typeof esAdmin);
+    
+    // Si hay mensaje de estado vacío, removerlo
+    const emptyState = tbody.querySelector('.empty-state');
+    if (emptyState) {
+        emptyState.remove();
+    }
+    
+    // Obtener el número de fila actual DIRECTO del DOM
+    const filasActuales = Array.from(tbody.querySelectorAll('tr')).length;
+    const numeroFila = filasActuales + 1;
+    
+    const tr = document.createElement('tr');
+    const clasedemanda = obtenerClaseDemanda(registro.demanda_no_satisfecha, registro.cantidad_requerida);
+    
+    // Generar botones ANTES de construir el HTML
+    const botonesHTML = generarBotonesAccion(registro.id, esAdmin);
+    console.log('  🔘 Botones generados para fila', numeroFila, ':', botonesHTML.substring(0, 50) + '...');
+    
+    tr.innerHTML = `
+        <td>${numeroFila}</td>
+        <td><strong>${escaparHTML(registro.establecimiento)}</strong></td>
+        <td>${escaparHTML(registro.producto)}</td>
+        <td>${escaparHTML(registro.tipo_servicio || 'No especificado')}</td>
+        <td>${registro.cantidad_requerida}</td>
+        <td>${registro.cantidad_disponible}</td>
+        <td class="${clasedemanda}">${registro.demanda_no_satisfecha}</td>
+        <td>${registro.cobertura}%</td>
+        <td>${formatearFecha(registro.fecha)}</td>
+        <td>
+            ${botonesHTML}
+        </td>
+    `;
+    
+    // Agregar la fila al final de la tabla
+    tbody.appendChild(tr);
+    
+    console.log('✓ Fila agregada exitosamente a la tabla. Total filas ahora:', numeroFila);
+    
+    // Hacer scroll a la nueva fila después de un pequeño delay
+    setTimeout(() => {
+        try {
+            tr.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+        } catch (e) {
+            console.warn('No se pudo hacer scroll:', e);
+        }
+    }, 50);
+}
+
+// Mostrar tabla (optimizada)
+function mostrarTabla(datos, esAdmin = false) {
+    console.log('📊 mostrarTabla - datos:', datos.length, '| esAdmin:', esAdmin, 'tipo:', typeof esAdmin);
+    const tbody = DOMCache.cuerpoTabla;
+    if (!tbody) {
+        console.error('❌ No se encontró tbody');
+        return;
+    }
     
     if (datos.length === 0) {
+        console.log('📋 Sin datos, mostrando estado vacío');
         tbody.innerHTML = '<tr class="empty-state"><td colspan="10">No hay registros. Completa el formulario para comenzar.</td></tr>';
         return;
     }
@@ -1304,6 +1981,10 @@ function mostrarTabla(datos) {
     datos.forEach((registro, index) => {
         const tr = document.createElement('tr');
         const clasedemanda = obtenerClaseDemanda(registro.demanda_no_satisfecha, registro.cantidad_requerida);
+        
+        // Generar botones ANTES de construir el HTML
+        const botonesHTML = generarBotonesAccion(registro.id, esAdmin);
+        console.log(`  📌 Registro ${index + 1}: generando botones con esAdmin=${esAdmin}`);
         
         tr.innerHTML = `
             <td>${index + 1}</td>
@@ -1316,7 +1997,7 @@ function mostrarTabla(datos) {
             <td>${registro.cobertura}%</td>
             <td>${formatearFecha(registro.fecha)}</td>
             <td>
-                <button class="btn btn-danger" onclick="eliminarRegistro(${registro.id})" aria-label="Eliminar registro">Eliminar</button>
+                ${botonesHTML}
             </td>
         `;
         
@@ -1325,26 +2006,28 @@ function mostrarTabla(datos) {
     
     tbody.innerHTML = '';
     tbody.appendChild(fragment);
+    
+    // LOG DE DEPURACIÓN: Verificar que los botones están en el DOM
+    const botonesEnTabla = tbody.querySelectorAll('button.btn-danger');
+    console.log('✅ Tabla actualizada con', datos.length, 'registros');
+    console.log('🔘 Botones DELETE en la tabla:', botonesEnTabla.length, 'encontrados');
+    botonesEnTabla.forEach((btn, idx) => {
+        console.log(`   Botón ${idx + 1}:`, btn.textContent, 'onclick:', btn.getAttribute('onclick'));
+    });
 }
 
 // Eliminar registro (mejorado)
-function eliminarRegistro(id) {
-    // Validar permisos
+async function eliminarRegistro(id) {
+    // Validar permisos - SOLO ADMIN puede eliminar
     if (!auth.estaAutenticado()) {
         mostrarNotificacion('Debes estar autenticado para eliminar registros', 'warning');
         return;
     }
 
-    // Si es usuario (no admin), solo puede eliminar sus propios registros
+    // Solo el administrador puede eliminar registros
     if (!auth.esAdmin()) {
-        const datos = obtenerDatos();
-        const registro = datos.find(r => r.id === id);
-        const usuarioActual = auth.obtenerUsuarioActual();
-        
-        if (registro && registro.usuario_registra !== usuarioActual?.usuario) {
-            mostrarNotificacion('Solo puedes eliminar tus propios registros', 'warning');
-            return;
-        }
+        mostrarNotificacion('Solo los administradores pueden eliminar registros', 'warning');
+        return;
     }
 
     if (confirm('¿Estás seguro de que deseas eliminar este registro?')) {
@@ -1359,7 +2042,17 @@ function eliminarRegistro(id) {
             
             datos = datos.filter(r => r.id !== id);
             localStorage.setItem(STORAGE_KEY, JSON.stringify(datos));
-            cargarDatos();
+            
+            // Sincronizar con Google Sheets
+            if (typeof enviarRegistroAppsScript === 'function') {
+                fetch(APPS_SCRIPT_URL, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ action: 'deleteReceta', id: id })
+                }).catch(e => console.warn('No se pudo eliminar en Google Sheets:', e));
+            }
+            
+            await cargarDatos();
             mostrarNotificacion('Registro eliminado exitosamente', 'info');
         } catch (error) {
             console.error('Error al eliminar registro:', error);
@@ -1442,12 +2135,16 @@ function actualizarProductosCriticos(datos) {
 }
 
 // Filtrar tabla (con debounce para mejor rendimiento)
-const filtrarTablaDebounced = debounce(() => {
+const filtrarTablaDebounced = debounce(async () => {
     const busqueda = DOMCache.filtroBusqueda?.value.toLowerCase().trim() || '';
-    const datos = obtenerDatos();
+    let datos = await cargarRegistrosDesdeAppScript(); // Cargar datos frescos
+    
+    // Obtener estado admin
+    const usuarioActual = auth.obtenerUsuarioActual && auth.obtenerUsuarioActual();
+    const esAdmin = usuarioActual && usuarioActual.rol === 'admin';
     
     if (!busqueda) {
-        mostrarTabla(datos);
+        mostrarTabla(datos, esAdmin);
         return;
     }
     
@@ -1460,7 +2157,7 @@ const filtrarTablaDebounced = debounce(() => {
                tipoServicio.includes(busqueda);
     });
 
-    mostrarTabla(datosFiltrados);
+    mostrarTabla(datosFiltrados, esAdmin);
 }, DEBOUNCE_DELAY);
 
 // Función wrapper para mantener compatibilidad
@@ -1469,7 +2166,7 @@ function filtrarTabla() {
 }
 
 // Limpiar todos los datos (mejorado con validación de permisos)
-function limpiarDatos() {
+async function limpiarDatos() {
     // Solo admin puede limpiar todos los datos
     if (!auth.esAdmin()) {
         mostrarNotificacion('Solo los administradores pueden limpiar todos los datos', 'warning');
@@ -1479,7 +2176,17 @@ function limpiarDatos() {
     if (confirm('⚠️ Advertencia: Esto eliminará TODOS los registros. ¿Estás seguro?')) {
         try {
             localStorage.removeItem(STORAGE_KEY);
-            cargarDatos();
+            
+            // Intentar limpiar también en Google Sheets
+            if (typeof enviarRegistroAppsScript === 'function') {
+                fetch(APPS_SCRIPT_URL, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ action: 'deleteAllRecetas' })
+                }).catch(e => console.warn('No se pudo limpiar en Google Sheets:', e));
+            }
+            
+            await cargarDatos();
             mostrarNotificacion('Todos los datos han sido eliminados', 'warning');
         } catch (error) {
             console.error('Error al limpiar datos:', error);
@@ -1490,10 +2197,10 @@ function limpiarDatos() {
 
 // Exportar a Excel con formato y resumen (mejorado)
 async function exportarCSV() {
-    // Obtener datos según permisos
-    const datos = obtenerDatosConPermisos();
+    // Usar los datos filtrados que están actualmente en la tabla
+    let datos = datosActualesFiltrados;
 
-    if (datos.length === 0) {
+    if (!datos || datos.length === 0) {
         mostrarNotificacion('No hay datos para exportar', 'info');
         return;
     }
@@ -1550,6 +2257,9 @@ async function exportarCSV() {
             console.warn('No se pudo cargar catalogo-redes.xlsx para COD PRE:', e && e.message ? e.message : e);
         }
 
+        // Exponer el mapa COD PRE globalmente para que otras operaciones (p.ej. guardar registro) lo utilicen
+        window.mapaCodPre = mapaCodPre;
+
         // Crear workbook
         const wb = XLSX.utils.book_new();
 
@@ -1588,14 +2298,43 @@ async function exportarCSV() {
         const datosHoja = datos.map((d, index) => {
             const establecimiento = (d.establecimiento || '').toString().trim();
             const key = establecimiento.toUpperCase();
-            const codPreVal = mapaCodPre[key] || '';
-            const prod = separarCodigoProducto(d.producto || '');
+            let codPreVal = mapaCodPre[key] || '';
+            // Formatear COD PRE a 5 dígitos
+            if (codPreVal) {
+                const numCodPre = parseInt(codPreVal, 10);
+                codPreVal = isNaN(numCodPre) ? codPreVal : String(numCodPre).padStart(5, '0');
+            }
+            
+            // Intentar obtener código de producto de dos maneras:
+            // 1. Directamente del campo codigo_producto
+            // 2. Extrayendo del nombre del producto si tiene formato "[CODIGO] - NOMBRE"
+            let codigoProd = '';
+            let prodNombre = '';
+            
+            if (d.codigo_producto) {
+                // Si el campo existe, usarlo
+                codigoProd = (d.codigo_producto || '').toString().trim();
+                prodNombre = (d.producto || '').toString().trim();
+            } else {
+                // Si no existe, intentar extraer del producto
+                const prod = separarCodigoProducto(d.producto || '');
+                codigoProd = prod.codigo || '';
+                prodNombre = prod.nombre || '';
+            }
+            
+            // Formatear código de producto a 5 dígitos
+            let codigoProdFormateado = codigoProd || '';
+            if (codigoProdFormateado) {
+                const numCodProd = parseInt(codigoProdFormateado, 10);
+                codigoProdFormateado = isNaN(numCodProd) ? codigoProdFormateado : String(numCodProd).padStart(5, '0');
+            }
+            
             return [
                 index + 1,
                 codPreVal || '',
                 establecimiento || '',
-                prod.codigo || '',
-                prod.nombre || '',
+                codigoProdFormateado || '',
+                prodNombre || '',
                 d.tipo_servicio || 'No especificado',
                 d.cantidad_requerida || 0,
                 d.cantidad_disponible || 0,
@@ -1798,6 +2537,15 @@ function crearHojaResumen(resumen) {
 
 // Formatear fecha
 function formatearFecha(fecha) {
+    if (!fecha) return '';
+    
+    // Si la fecha está en formato YYYY-MM-DD (sin hora), tratarla como fecha local
+    if (/^\d{4}-\d{2}-\d{2}$/.test(fecha)) {
+        const [año, mes, dia] = fecha.split('-');
+        return `${dia}/${mes}/${año}`;
+    }
+    
+    // Si tiene hora, usar toLocaleDateString
     const opciones = { year: 'numeric', month: '2-digit', day: '2-digit' };
     return new Date(fecha).toLocaleDateString('es-ES', opciones);
 }
@@ -2032,7 +2780,7 @@ function seleccionarCentroLogin(centro) {
 }
 
 // Realizar login
-function realizarLogin() {
+async function realizarLogin() {
     const tipoAcceso = DOMCache.get('tipoAcceso');
     const loginCentro = DOMCache.get('loginCentro');
     const loginUsuario = DOMCache.get('loginUsuario');
@@ -2066,8 +2814,28 @@ function realizarLogin() {
     }
 
     try {
+        // Asegurar usuarios cargados desde Google Sheets
+        if ((!window.USUARIOS_SISTEMA || window.USUARIOS_SISTEMA.length === 0) && typeof cargarUsuariosDesdeAppScript === 'function') {
+            try { await cargarUsuariosDesdeAppScript(); } catch (e) { console.warn('Fallo al sincronizar usuarios antes del login:', e); }
+        }
+        // Fallback: si sigue vacío, crear admin local temporal para no bloquear
+        if (!window.USUARIOS_SISTEMA || window.USUARIOS_SISTEMA.length === 0) {
+            window.USUARIOS_SISTEMA = [{
+                id: 'usr_admin_local',
+                usuario: 'admin',
+                contraseña: 'c63bc483',
+                rol: 'admin',
+                centro: 'ADMINISTRACIÓN',
+                activo: true,
+                creado_en: new Date().toISOString()
+            }];
+            console.warn('Usando admin local de fallback para permitir acceso.');
+        }
+
         // Primero verificar el usuario antes de hacer login para validar tipo de acceso
         const usuarios = auth.obtenerTodosLosUsuarios();
+        console.log('🔍 DEBUG LOGIN - Usuarios cargados:', JSON.stringify(usuarios));
+        console.log('🔍 DEBUG LOGIN - Buscando usuario:', usuario);
         const usuarioEncontrado = usuarios.find(u => u.usuario === usuario && u.activo === true);
         
         if (!usuarioEncontrado) {
@@ -2118,9 +2886,6 @@ function realizarLogin() {
         
         // Mostrar aplicación
         mostrarAplicacion();
-        
-        // Recargar la página para reiniciar la aplicación completamente
-        location.reload();
     } catch (error) {
         console.error('Error en login:', error);
         errorDiv.textContent = '❌ ' + error.message;
@@ -2129,13 +2894,68 @@ function realizarLogin() {
     }
 }
 
-// Resetear sistema
-function resetearYRecarga() {
-    if (confirm('⚠️ Esto borrará TODOS los usuarios y datos. ¿Estás seguro?')) {
-        auth.resetearSistema();
-        alert('✓ Sistema reseteado. La página se recargará.');
-        location.reload();
+// Abrir modal de confirmación de reseteo
+function abrirModalResetConfirm() {
+    const modal = document.getElementById('resetConfirmModal');
+    const passwordInput = document.getElementById('resetPassword');
+    const errorDiv = document.getElementById('resetError');
+    
+    if (modal) {
+        modal.classList.remove('modal-hidden');
+        if (passwordInput) passwordInput.value = '';
+        if (errorDiv) errorDiv.classList.add('error-hidden');
     }
+}
+
+// Cerrar modal de confirmación de reseteo
+function cerrarModalResetConfirm() {
+    const modal = document.getElementById('resetConfirmModal');
+    if (modal) {
+        modal.classList.add('modal-hidden');
+    }
+}
+
+// Confirmar reseteo con contraseña
+function confirmarReseteo(event) {
+    event.preventDefault();
+    
+    const passwordInput = document.getElementById('resetPassword');
+    const errorDiv = document.getElementById('resetError');
+    const contraseña = passwordInput.value;
+    
+    // Obtener usuario y datos actuales
+    const usuarioActual = auth.obtenerUsuarioActual && auth.obtenerUsuarioActual();
+    
+    if (!usuarioActual) {
+        if (errorDiv) {
+            errorDiv.textContent = '❌ No hay usuario autenticado';
+            errorDiv.classList.remove('error-hidden');
+        }
+        return;
+    }
+    
+    // Verificar contraseña
+    if (usuarioActual.contraseña !== contraseña) {
+        if (errorDiv) {
+            errorDiv.textContent = '❌ Contraseña incorrecta';
+            errorDiv.classList.remove('error-hidden');
+        }
+        if (passwordInput) passwordInput.value = '';
+        return;
+    }
+    
+    // Contraseña correcta, proceder con reset
+    if (errorDiv) errorDiv.classList.add('error-hidden');
+    
+    auth.resetearSistema();
+    cerrarModalResetConfirm();
+    alert('✓ Sistema reseteado. La página se recargará.');
+    location.reload();
+}
+
+// Resetear sistema - abre modal de confirmación
+function resetearYRecarga() {
+    abrirModalResetConfirm();
 }
 
 // Mostrar aplicación principal
@@ -2148,6 +2968,12 @@ function mostrarAplicacion() {
     
     // Actualizar información del usuario
     actualizarInfoUsuario();
+    
+    // Cargar datos filtrados para el nuevo usuario
+    cargarDatos();
+    
+    // Aplicar permisos y deshabilitar campos para usuarios de centro
+    aplicarPermisosEstablecimientos();
     
     // Mostrar/ocultar botón de admin
     const btnAdmin = DOMCache.get('btnAdmin');
@@ -2279,6 +3105,55 @@ function abrirModalAdmin() {
     if (adminModal) {
         adminModal.classList.remove('modal-hidden');
         cargarListaUsuarios();
+        
+        // Cargar catálogos para el formulario de crear usuario
+        cargarCatalogo();
+        
+        // Esperar un poco y luego preparar los selects del formulario
+        setTimeout(() => {
+            prepararSelectoresAdmin();
+        }, 100);
+    }
+}
+
+// Preparar selectores del modal de admin
+function prepararSelectoresAdmin() {
+    const newRed = document.getElementById('newRed');
+    const editRed = document.getElementById('editRed');
+    
+    // Llenar select de RED para crear usuario
+    if (newRed && CATALOGO_ESTABLECIMIENTOS && CATALOGO_ESTABLECIMIENTOS.redes) {
+        // Limpiar opciones previas (menos la primera)
+        while (newRed.options.length > 1) newRed.remove(1);
+        
+        // Agregar redes
+        CATALOGO_ESTABLECIMIENTOS.redes.forEach(red => {
+            const opt = document.createElement('option');
+            opt.value = red.nombre;
+            opt.textContent = red.nombre;
+            newRed.appendChild(opt);
+        });
+        
+        // Remover eventos previos y agregar nuevo
+        const newRedClone = newRed.cloneNode(true);
+        newRed.parentNode.replaceChild(newRedClone, newRed);
+        document.getElementById('newRed').addEventListener('change', () => actualizarEstablecimientosAdmin('new'));
+    }
+    
+    // Llenar select de RED para editar usuario
+    if (editRed && CATALOGO_ESTABLECIMIENTOS && CATALOGO_ESTABLECIMIENTOS.redes) {
+        while (editRed.options.length > 1) editRed.remove(1);
+        
+        CATALOGO_ESTABLECIMIENTOS.redes.forEach(red => {
+            const opt = document.createElement('option');
+            opt.value = red.nombre;
+            opt.textContent = red.nombre;
+            editRed.appendChild(opt);
+        });
+        
+        const editRedClone = editRed.cloneNode(true);
+        editRed.parentNode.replaceChild(editRedClone, editRed);
+        document.getElementById('editRed').addEventListener('change', () => actualizarEstablecimientosAdmin('edit'));
     }
 }
 
@@ -2356,6 +3231,19 @@ function agregarEventListenersAdmin() {
             sugerenciasDiv.classList.remove('active');
         }
     });
+
+    // Autocomplete: mostrar sugerencias al enfocar los inputs de centro
+    const newCentro = document.getElementById('newCentro');
+    if (newCentro) {
+        newCentro.addEventListener('keyup', filtrarEstablecimientosAdmin);
+        newCentro.addEventListener('focus', mostrarTodosEstablecimientosAdmin);
+    }
+
+    const editCentro = document.getElementById('editCentro');
+    if (editCentro) {
+        editCentro.addEventListener('keyup', filtrarEstablecimientosEditarAdmin);
+        editCentro.addEventListener('focus', mostrarTodosEstablecimientosEditar);
+    }
 }
 
 // Crear nuevo usuario
@@ -2541,6 +3429,43 @@ function filtrarEstablecimientosAdmin() {
     datalist.innerHTML = resultados.map(est => `
         <option value="${est}"></option>
     `).join('');
+}
+
+// Mostrar todos los establecimientos en el formulario de crear usuario (al enfocar)
+function mostrarTodosEstablecimientosAdmin() {
+    const inputCentro = document.getElementById('newCentro');
+    const sugerenciasDiv = document.getElementById('sugerenciasEstablecimientos');
+    const datalist = document.getElementById('establecimientosList');
+
+    if (!inputCentro || !sugerenciasDiv || !datalist) return;
+
+    const selectedRed = document.getElementById('newRed') ? document.getElementById('newRed').value : '';
+    let lista = [];
+    if (selectedRed) {
+        const redObj = CATALOGO_ESTABLECIMIENTOS.redes.find(r => r.nombre === selectedRed);
+        lista = redObj && Array.isArray(redObj.establecimientos) ? redObj.establecimientos : [];
+    } else {
+        lista = obtenerTodosLosEstablecimientos();
+    }
+
+    if (!lista || lista.length === 0) {
+        sugerenciasDiv.innerHTML = '<div class="sugerencia-item" style="color:#999;">No hay establecimientos disponibles</div>';
+        sugerenciasDiv.classList.add('active');
+        datalist.innerHTML = '';
+        return;
+    }
+
+    // Mostrar hasta 50 sugerencias
+    const toShow = lista.slice(0, 50);
+    sugerenciasDiv.innerHTML = toShow.map(est => `
+        <div class="sugerencia-item" onclick="seleccionarEstablecimiento('${est.replace(/'/g, "\\'")}')">
+            <div class="sugerencia-descripcion">🏥 ${est}</div>
+        </div>
+    `).join('');
+    sugerenciasDiv.classList.add('active');
+
+    // Llenar datalist para navegación con teclado
+    datalist.innerHTML = toShow.map(est => `<option value="${est}"></option>`).join('');
 }
 
 // Seleccionar un establecimiento de las sugerencias
@@ -2820,6 +3745,40 @@ function filtrarEstablecimientosEditarAdmin() {
     sugerencias.style.display = 'block';
 }
 
+// Mostrar todos los establecimientos en el formulario de editar usuario (al enfocar)
+function mostrarTodosEstablecimientosEditar() {
+    const inputCentro = document.getElementById('editCentro');
+    const sugerencias = document.getElementById('sugerenciasEstablecimientosEditar');
+    const datalist = document.getElementById('establecimientosListEditar');
+
+    if (!inputCentro || !sugerencias || !datalist) return;
+
+    const selectedRed = document.getElementById('editRed') ? document.getElementById('editRed').value : '';
+    let lista = [];
+    if (selectedRed) {
+        const redObj = CATALOGO_ESTABLECIMIENTOS.redes.find(r => r.nombre === selectedRed);
+        lista = redObj && Array.isArray(redObj.establecimientos) ? redObj.establecimientos : [];
+    } else {
+        lista = obtenerTodosLosEstablecimientos();
+    }
+
+    if (!lista || lista.length === 0) {
+        sugerencias.innerHTML = '<div class="sugerencia-item" style="color:#999;">No hay establecimientos disponibles</div>';
+        sugerencias.style.display = 'block';
+        datalist.innerHTML = '';
+        return;
+    }
+
+    const toShow = lista.slice(0, 50);
+    sugerencias.innerHTML = toShow.map(est => `
+        <div class="sugerencia-item" onclick="seleccionarEstablecimientoEditar('${est.replace(/'/g, "\\'")}')" style="cursor: pointer;">
+            <span style="color: #28a745;">🏥</span> ${est}
+        </div>
+    `).join('');
+    sugerencias.style.display = 'block';
+    datalist.innerHTML = toShow.map(est => `<option value="${est}"></option>`).join('');
+}
+
 // Seleccionar establecimiento para edición
 function seleccionarEstablecimientoEditar(establecimiento) {
     const inputCentro = document.getElementById('editCentro');
@@ -2846,17 +3805,7 @@ function obtenerDatosConPermisos() {
 
 // Modificar cargarDatos para usar permisos
 const cargarDatosOriginal = cargarDatos;
-function cargarDatos() {
-    const datos = obtenerDatosConPermisos();
-    mostrarTabla(datos);
-    actualizarEstadisticas(datos);
-    actualizarProductosCriticos(datos);
-    
-    // Para admins, mostrar información general
-    if (auth.esAdmin()) {
-        mostrarResumenGeneral();
-    }
-}
+
 
 // Mostrar resumen general (solo admin)
 function mostrarResumenGeneral() {

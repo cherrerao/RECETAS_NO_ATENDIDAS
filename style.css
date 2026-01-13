@@ -654,8 +654,8 @@ textarea {
     content: '';
     position: absolute;
     inset: 0;
-    /* Very light overlay so background stays visible but login card reads very bright */
-    background: linear-gradient(180deg, rgba(2,6,23,0.18), rgba(12,16,40,0.12));
+    /* Overlay blanco para que la silueta del fondo se vea más blanca */
+    background: linear-gradient(180deg, rgba(255,255,255,0.35), rgba(255,255,255,0.25));
     z-index: 10001;
     pointer-events: none;
     transition: background 240ms ease;

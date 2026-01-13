@@ -60,13 +60,34 @@ class AutenticacionSistema {
             const char = contraseña.charCodeAt(i);
             hash = ((hash << 5) - hash) + char;
         }
-        return hash.toString(16);
+        // Normalizar a entero de 32 bits sin signo para evitar prefijos negativos
+        return (hash >>> 0).toString(16);
     }
 
     // Obtener todos los usuarios (SIEMPRE devuelve los usuarios)
     obtenerTodosLosUsuarios() {
-        const usuarios = localStorage.getItem(AUTH_STORAGE_KEY);
-        return usuarios ? JSON.parse(usuarios) : [];
+        // Priorizar la colección en memoria si existe
+        if (window.USUARIOS_SISTEMA && Array.isArray(window.USUARIOS_SISTEMA) && window.USUARIOS_SISTEMA.length > 0) {
+            return window.USUARIOS_SISTEMA;
+        }
+
+        // Si no hay usuarios en memoria, intentar cargar desde localStorage
+        try {
+            const raw = localStorage.getItem(AUTH_STORAGE_KEY);
+            if (raw) {
+                const parsed = JSON.parse(raw);
+                if (Array.isArray(parsed)) {
+                    window.USUARIOS_SISTEMA = parsed;
+                    return parsed;
+                }
+            }
+        } catch (e) {
+            console.warn('No se pudo leer usuarios desde localStorage:', e);
+        }
+
+        // Finalmente, devolver arreglo vacío y mantener consistencia en window
+        window.USUARIOS_SISTEMA = [];
+        return [];
     }
     
     // Obtener todos los usuarios (solo si es admin)
@@ -116,8 +137,25 @@ class AutenticacionSistema {
             activo: true
         };
 
+        // Guardar en Google Sheets (asíncrono pero retornamos el usuario de inmediato)
+        if (typeof guardarUsuarioEnAppScript === 'function') {
+            guardarUsuarioEnAppScript(nuevoUsuario).then(result => {
+                if (result) {
+                    console.log(`✓ Usuario ${usuario} guardado en Google Sheets`);
+                } else {
+                    console.warn('⚠ No se pudo confirmar guardado en Google Sheets');
+                }
+            });
+        }
+        
+        // Agregar a la colección en memoria y persistir en localStorage
         usuarios.push(nuevoUsuario);
-        localStorage.setItem(AUTH_STORAGE_KEY, JSON.stringify(usuarios));
+        window.USUARIOS_SISTEMA = usuarios;
+        try {
+            localStorage.setItem(AUTH_STORAGE_KEY, JSON.stringify(usuarios));
+        } catch (e) {
+            console.warn('No se pudo persistir usuarios en localStorage:', e);
+        }
 
         // Log de auditoría
         console.log(`[AUDITORÍA] Usuario ${this.usuarioActual.usuario} creó usuario: ${usuario} (${rol})`);
@@ -144,8 +182,8 @@ class AutenticacionSistema {
         
         // Buscar usuario
         const usuarioEncontrado = usuarios.find(u => {
-            const usuarioCoincide = u.usuario === usuario;
-            const contraseñaCoincide = u.contraseña === contraseñaHash;
+            const usuarioCoincide = String(u.usuario) === usuario;
+            const contraseñaCoincide = String(u.contraseña) === String(contraseñaHash);
             const estaActivo = u.activo === true;
             
             console.log(`  Comparando "${usuario}": usuario=${usuarioCoincide}, contraseña=${contraseñaCoincide}, activo=${estaActivo}`);
@@ -273,7 +311,7 @@ class AutenticacionSistema {
         if (usuarios.length === 0) {
             const contraseñaHash = this.hashearContraseña('admin123');
             console.log('Hash generado para admin123:', contraseñaHash);
-            
+
             const adminPorDefecto = {
                 id: 'usr_admin_default_' + Date.now(),
                 usuario: 'admin',
@@ -283,8 +321,14 @@ class AutenticacionSistema {
                 creado_en: new Date().toISOString(),
                 activo: true
             };
-            
-            localStorage.setItem(AUTH_STORAGE_KEY, JSON.stringify([adminPorDefecto]));
+
+            // Persistir y mantener en memoria
+            try {
+                localStorage.setItem(AUTH_STORAGE_KEY, JSON.stringify([adminPorDefecto]));
+            } catch (e) {
+                console.warn('No se pudo persistir admin por defecto en localStorage:', e);
+            }
+            window.USUARIOS_SISTEMA = [adminPorDefecto];
             console.log('✓ Usuario administrador por defecto creado: admin / admin123');
             console.log('Usuarios en localStorage:', localStorage.getItem(AUTH_STORAGE_KEY));
             return true;

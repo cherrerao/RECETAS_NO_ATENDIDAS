@@ -64,15 +64,7 @@
                     <button type="submit" class="btn btn-primary btn-login">INGRESAR</button>
                 </form>
 
-                <div class="login-info">
-                    <p><strong>Demo Admin:</strong> 
-                        <br>Centro: ADMINISTRACIÓN
-                        <br>Usuario: <code>admin</code> | Contraseña: <code>admin123</code>
-                    </p>
-                    <p style="margin-top: 15px; font-size: 0.85em;">
-                        <button type="button" onclick="resetearYRecarga()" style="background: #f0ad4e; border: none; padding: 6px 12px; border-radius: 4px; cursor: pointer; font-weight: 600;">🔄 Resetear Sistema</button>
-                    </p>
-                </div>
+                <!-- Sección de Demo Admin removida - Solo visible en admin -->
             </div>
         </div>
     </div>
@@ -174,7 +166,7 @@
                     <h2>Registros de Recetas No Atendidas</h2>
                     <div class="controls">
                         <input type="text" id="filtro_busqueda" placeholder="Buscar establecimiento o producto..." class="search-box">
-                        <button id="btnLimpiar" class="btn btn-secondary">Limpiar Datos</button>
+                        <button id="btnLimpiar" class="btn btn-secondary" style="display: none;" title="Solo disponible para administradores">Limpiar Datos</button>
                         <button id="btnExportar" class="btn btn-secondary">📊 Descargar Excel</button>
                     </div>
                 </div>
@@ -267,6 +259,11 @@
                 </div>
 
                 <div class="modal-body">
+                    <!-- Botón de Resetear Sistema en admin -->
+                    <div style="text-align: right; margin-bottom: 15px; padding-bottom: 10px; border-bottom: 1px solid #e6e6e6;">
+                        <button type="button" onclick="resetearYRecarga()" style="background: #f0ad4e; border: none; padding: 8px 16px; border-radius: 4px; cursor: pointer; font-weight: 600; color: #333;">🔄 Resetear Sistema</button>
+                    </div>
+
                     <!-- Pestaña de crear usuario -->
                     <div class="admin-tabs">
                         <button class="tab-btn active" onclick="cambiarTab('crear')">Crear Usuario</button>
@@ -400,6 +397,32 @@
                         </form>
                     </div>
                 </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL DE CONFIRMACIÓN DE RESETEO -->
+    <div id="resetConfirmModal" class="modal modal-hidden">
+        <div class="modal-content" style="max-width: 400px;">
+            <div class="modal-header">
+                <h2>⚠️ Confirmar Reseteo del Sistema</h2>
+                <button class="btn-close" onclick="cerrarModalResetConfirm()">&times;</button>
+            </div>
+            <div class="modal-body">
+                <p style="color: #d9534f; font-weight: 600; margin-bottom: 15px;">
+                    Esto eliminará TODOS los usuarios y datos del sistema. Esta acción no se puede deshacer.
+                </p>
+                <form id="formResetConfirm" onsubmit="confirmarReseteo(event)">
+                    <div class="form-group">
+                        <label for="resetPassword">Ingresa tu contraseña para confirmar:</label>
+                        <input type="password" id="resetPassword" placeholder="Tu contraseña" required>
+                    </div>
+                    <div id="resetError" class="error-message error-hidden"></div>
+                    <div style="display: flex; gap: 10px; justify-content: flex-end;">
+                        <button type="button" onclick="cerrarModalResetConfirm()" class="btn btn-secondary">Cancelar</button>
+                        <button type="submit" class="btn btn-danger">Resetear Sistema</button>
+                    </div>
+                </form>
             </div>
         </div>
     </div>
