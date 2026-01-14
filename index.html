@@ -24,7 +24,7 @@
     <div id="loginScreen" class="login-screen">
         <div class="login-container">
             <div class="login-card">
-                <h1>🔐 Acceso al Sistema</h1>
+                <h1>� Sistema de Salud</h1>
                 <p class="login-subtitle">Registro de Recetas No Atendidas</p>
                 
                 <form id="loginForm" class="login-form">
@@ -198,7 +198,10 @@
 
             <!-- Estadísticas -->
             <section class="stats-section">
-                <h2>Resumen General</h2>
+                <div class="section-header">
+                    <h2>Resumen General</h2>
+                    <button id="btnExportarResumen" class="btn btn-secondary">📊 Descargar Resumen Excel</button>
+                </div>
                 <div class="stats-grid">
                     <div class="stat-card">
                         <div class="stat-number" id="totalRegistros">0</div>

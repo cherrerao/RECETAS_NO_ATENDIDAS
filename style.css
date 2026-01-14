@@ -240,8 +240,35 @@ textarea {
 
 .table-wrapper {
     overflow-x: auto;
+    overflow-y: auto;
+    max-height: 600px;
     border-radius: 8px;
     box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+    position: relative;
+}
+
+/* Scrollbar personalizado para la tabla */
+.table-wrapper::-webkit-scrollbar {
+    width: 12px;
+    height: 12px;
+}
+
+.table-wrapper::-webkit-scrollbar-track {
+    background: #f1f1f1;
+    border-radius: 6px;
+}
+
+.table-wrapper::-webkit-scrollbar-thumb {
+    background: linear-gradient(180deg, var(--primary), var(--primary-2));
+    border-radius: 6px;
+}
+
+.table-wrapper::-webkit-scrollbar-thumb:hover {
+    background: linear-gradient(180deg, var(--primary-2), var(--primary));
+}
+
+.table-wrapper::-webkit-scrollbar-corner {
+    background: #f1f1f1;
 }
 
 .tabla-registros {
@@ -253,12 +280,16 @@ textarea {
 .tabla-registros thead {
     background: linear-gradient(90deg, var(--primary), var(--primary-2));
     color: white;
+    position: sticky;
+    top: 0;
+    z-index: 10;
 }
 
 .tabla-registros th {
     padding: 15px;
     text-align: left;
     font-weight: 600;
+    background: linear-gradient(90deg, var(--primary), var(--primary-2));
 }
 
 .tabla-registros td {
@@ -297,6 +328,21 @@ textarea {
     background: #f8f9fa;
     padding: 30px;
     border-radius: 8px;
+}
+
+.stats-section .section-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 15px;
+    margin-bottom: 20px;
+}
+
+.stats-section .section-header h2 {
+    margin-bottom: 0;
+    border-bottom: none;
+    padding-bottom: 0;
 }
 
 .stats-grid {
@@ -345,6 +391,29 @@ textarea {
 .critical-list {
     display: grid;
     gap: 15px;
+    max-height: 600px;
+    overflow-y: auto;
+    overflow-x: hidden;
+    padding-right: 5px;
+}
+
+/* Scrollbar personalizado para productos críticos */
+.critical-list::-webkit-scrollbar {
+    width: 12px;
+}
+
+.critical-list::-webkit-scrollbar-track {
+    background: #f1f1f1;
+    border-radius: 6px;
+}
+
+.critical-list::-webkit-scrollbar-thumb {
+    background: linear-gradient(180deg, #ffc107, #ff9800);
+    border-radius: 6px;
+}
+
+.critical-list::-webkit-scrollbar-thumb:hover {
+    background: linear-gradient(180deg, #ff9800, #ffc107);
 }
 
 .critical-item {
@@ -585,6 +654,11 @@ textarea {
     display: none !important;
 }
 
+/* Utilidad para ocultar secciones solo visibles para admin */
+.solo-admin-hidden {
+    display: none !important;
+}
+
 /* Clases adicionales para mejor estructura */
 .form-group-relative {
     position: relative;
@@ -654,8 +728,8 @@ textarea {
     content: '';
     position: absolute;
     inset: 0;
-    /* Overlay blanco para que la silueta del fondo se vea más blanca */
-    background: linear-gradient(180deg, rgba(255,255,255,0.35), rgba(255,255,255,0.25));
+    /* Overlay balanceado y ligero para no lavar los colores */
+    background: linear-gradient(180deg, rgba(255,255,255,0.32), rgba(255,255,255,0.28));
     z-index: 10001;
     pointer-events: none;
     transition: background 240ms ease;
@@ -665,37 +739,50 @@ textarea {
 .login-card{
     position:relative;
     z-index:10002;
-    /* Force fully opaque white with high contrast so it always reads as bright */
     background: #ffffff !important;
-    border: 1px solid rgba(0,0,0,0.06) !important;
-    box-shadow: 0 48px 120px rgba(2,6,23,0.38), 0 12px 44px rgba(91,110,246,0.06) !important;
-    max-width: 560px;
+    border: 1px solid #e6ebf5 !important;
+    box-shadow: 0 18px 52px rgba(9,17,34,0.18), 0 6px 20px rgba(123,97,255,0.10) !important;
+    max-width: 540px;
     width: 92%;
-    padding: 48px 42px;
-    border-radius: 16px;
+    padding: 40px 36px;
+    border-radius: 18px;
     transform-origin: center;
     animation: popIn 420ms cubic-bezier(.2,.9,.28,1) both;
+    filter: brightness(1.01) contrast(1.06);
+}
+.login-card h1{font-family:'Rajdhani', 'Poppins', sans-serif;letter-spacing:0.6px;color:#1f2335;font-size:2.1rem}
+
+/* Tipografía y espaciado del formulario */
+.login-form{display:flex;flex-direction:column;gap:18px;text-align:left}
+.login-form .form-group{margin:0;position:relative;display:flex;flex-direction:column;gap:8px}
+.login-form label{color:#2a2e3f;font-weight:700;letter-spacing:0.1px}
+
+/* Inputs y selects refinados, mismos colores originales */
+.login-form input,
+.login-form select,
+.login-form textarea{
+    background:#f7f8ff !important;
+    border:1.5px solid #e5e7fb;
+    color:#1f2335;
+    padding:14px 14px;
+    border-radius:12px;
+    font-size:1rem;
+    transition:border-color 160ms ease, box-shadow 160ms ease, transform 120ms ease;
+    box-shadow:0 6px 18px rgba(9,17,34,0.04);
+}
+.login-form input::placeholder{color:#8a8fa3}
+.login-form input:focus,
+.login-form select:focus,
+.login-form textarea:focus{
+    outline:none;
+    border-color:var(--primary);
+    box-shadow:0 0 0 4px rgba(123,97,255,0.10);
+    transform:translateY(-1px);
 }
 
-.login-card h1{font-family:'Rajdhani', 'Poppins', sans-serif;letter-spacing:0.6px;color:#071133}
-
-/* Slightly lighten inputs and labels for readability */
-.login-form label{color:#0b1220}
-
-/* Inputs and selects: pure white and brighter borders */
-.login-form input, .login-form select, .login-form textarea{background: #ffffff !important; border: 1px solid #e9eef8; color: #071133}
-.login-form input::placeholder{color:#9aa3b2}
-
-/* Remove any inner shadows that dull the inputs */
-.login-form input, .login-form select, .login-form textarea{box-shadow:none}
-
-/* Make inputs and placeholders brighter and remove dull tint */
-.login-form input::placeholder{color:#9aa3b2}
-.login-form input, .login-form select, .login-form textarea{border:1px solid #e6e9ef;color:#071133}
-
 /* Brighten the primary button */
-.btn-primary{background:linear-gradient(90deg,#6f5aff,#7b61ff);color:#fff;box-shadow:0 14px 40px rgba(123,61,255,0.14)}
-.btn-primary:hover{box-shadow:0 18px 50px rgba(123,61,255,0.18);transform:translateY(-3px)}
+.btn-primary{background:linear-gradient(90deg,#6f6dff,#8b7dff);color:#ffffff;box-shadow:0 16px 44px rgba(123,97,255,0.18);font-weight:700;text-shadow:0 1px 0 rgba(0,0,0,0.08)}
+.btn-primary:hover{box-shadow:0 20px 56px rgba(123,97,255,0.22);transform:translateY(-3px)}
 
 /* Reduce any page-wide tint leaking into the card by ensuring high contrast text */
 .login-card, .login-card *{color: #081227}
@@ -721,13 +808,13 @@ textarea {
     -webkit-appearance: none;
     -moz-appearance: none;
     appearance: none;
-    background: #ffffff !important;
-    border: 1px solid #e9eef8;
-    padding: 12px 40px 12px 14px;
-    border-radius: 10px;
+    background: #f7f8ff !important;
+    border: 1.5px solid #e5e7fb;
+    padding: 14px 44px 14px 14px;
+    border-radius: 12px;
     font-weight: 600;
-    color: #071133;
-    box-shadow: none;
+    color: #1f2335;
+    box-shadow:0 6px 18px rgba(9,17,34,0.04);
     background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='14' height='8' viewBox='0 0 14 8'><path fill='%23071133' d='M7 8L0 0h14z'/></svg>");
     background-repeat: no-repeat;
     background-position: right 12px center;
@@ -737,13 +824,13 @@ textarea {
 .login-form select:focus {
     outline: none;
     border-color: var(--primary);
-    box-shadow: 0 8px 30px rgba(91,110,246,0.12), 0 0 0 4px rgba(123,61,255,0.06);
+    box-shadow: 0 0 0 4px rgba(123,97,255,0.10);
 }
 
 /* Opciones: estilo básico (varía por navegador) */
 .login-form select option {
     background: #ffffff;
-    color: #071133;
+    color: #2f3040;
     padding: 6px 8px;
 }
 
@@ -753,20 +840,24 @@ textarea {
 
 /* Make overlay darker on very small screens where background may interfere */
 @media (max-width:480px){
-    .login-screen::before{background: linear-gradient(180deg, rgba(2,6,23,0.55), rgba(12,16,40,0.55));}
+    /* En móviles, un poco más claro que desktop pero sin exceso */
+    .login-screen::before{
+        background: linear-gradient(180deg, rgba(255,255,255,0.48), rgba(255,255,255,0.40));
+    }
 }
+
 
 
 .login-card h1 {
-    color: #333;
-    margin-bottom: 10px;
-    font-size: 2em;
+    color: #1f2335;
+    margin-bottom: 8px;
+    font-size: 2.1rem;
 }
 
 .login-subtitle {
-    color: #666;
-    margin-bottom: 40px;
-    font-size: 1.1em;
+    color: #4a4f5f;
+    margin-bottom: 28px;
+    font-size: 1.05rem;
 }
 
 .login-form {
@@ -774,16 +865,15 @@ textarea {
 }
 
 .login-form .form-group {
-    margin-bottom: 25px;
-    position: relative;
+    margin: 0;
 }
 
 .login-form label {
     display: block;
-    margin-bottom: 10px;
-    color: #333;
-    font-weight: 600;
-    font-size: 1em;
+    margin-bottom: 0;
+    color: #2a2e3f;
+    font-weight: 700;
+    font-size: 1rem;
 }
 
 .login-form input {
@@ -798,7 +888,7 @@ textarea {
 .login-form input:focus {
     outline: none;
     border-color: var(--primary);
-    box-shadow: 0 0 0 4px rgba(123,61,255,0.08);
+    box-shadow: 0 0 0 4px rgba(16,185,129,0.12);
 }
 
 .login-form select {

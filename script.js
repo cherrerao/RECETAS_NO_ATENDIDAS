@@ -907,16 +907,32 @@ const filtrarProductosDebounced = debounce(() => {
         return;
     }
 
-    // Filtrar medicamentos que coincidan con la búsqueda
-    const resultados = CATALOGO_MEDICAMENTOS.unicos.filter(med => {
+    // Separar resultados en dos grupos: que comienzan con la búsqueda y que la contienen
+    const comienzan = [];
+    const contienen = [];
+
+    CATALOGO_MEDICAMENTOS.unicos.forEach(med => {
         const codigo = (med.codigo || '').toLowerCase();
         const descripcion = (med.descripcion || '').toLowerCase();
         const categoria = (med.categoria || '').toLowerCase();
         
-        return codigo.includes(busqueda) || 
-               descripcion.includes(busqueda) || 
-               categoria.includes(busqueda);
-    }).slice(0, MAX_SUGERENCIAS);
+        const coincideEnCodigo = codigo.includes(busqueda);
+        const coincideEnDescripcion = descripcion.includes(busqueda);
+        const coincideEnCategoria = categoria.includes(busqueda);
+
+        // Si coincide en algún campo
+        if (coincideEnCodigo || coincideEnDescripcion || coincideEnCategoria) {
+            // Priorizar: si comienza con la búsqueda en código o descripción, va a "comienzan"
+            if (codigo.startsWith(busqueda) || descripcion.startsWith(busqueda)) {
+                comienzan.push(med);
+            } else {
+                contienen.push(med);
+            }
+        }
+    });
+
+    // Combinar: primero los que comienzan, luego los que contienen
+    const resultados = [...comienzan, ...contienen].slice(0, MAX_SUGERENCIAS);
 
     if (resultados.length === 0) {
         sugerenciasDiv.innerHTML = '<div class="sugerencia-item" style="color: #999;">No se encontraron medicamentos</div>';
@@ -1258,6 +1274,12 @@ function agregarEventListeners() {
     
     if (btnExportar) {
         btnExportar.addEventListener('click', exportarCSV);
+    }
+    
+    // Event listener para exportar resumen en Excel
+    const btnExportarResumen = DOMCache.get('btnExportarResumen');
+    if (btnExportarResumen) {
+        btnExportarResumen.addEventListener('click', exportarResumenExcel);
     }
     
     if (filtroBusqueda) {
@@ -2083,7 +2105,7 @@ function actualizarEstadisticas(datos) {
 function actualizarProductosCriticos(datos) {
     const productosCon = new Map();
 
-    // Agrupar por producto y sumar demanda no satisfecha (usando Map para mejor rendimiento)
+    // Agrupar por producto y contar establecimientos ÚNICOS
     datos.forEach(registro => {
         if (registro.demanda_no_satisfecha > 0) {
             const clave = registro.producto;
@@ -2091,12 +2113,12 @@ function actualizarProductosCriticos(datos) {
                 productosCon.set(clave, {
                     producto: registro.producto,
                     demanda_total: 0,
-                    registros: 0
+                    establecimientos: new Set() // Usar Set para contar establecimientos únicos
                 });
             }
             const producto = productosCon.get(clave);
             producto.demanda_total += registro.demanda_no_satisfecha;
-            producto.registros += 1;
+            producto.establecimientos.add(registro.establecimiento); // Agregar establecimiento al Set
         }
     });
 
@@ -2118,10 +2140,11 @@ function actualizarProductosCriticos(datos) {
     productos.forEach(p => {
         const item = document.createElement('div');
         item.className = 'critical-item';
+        const cantidadEstablecimientos = p.establecimientos.size; // Obtener cantidad de establecimientos únicos
         item.innerHTML = `
             <div class="critical-info">
                 <h4>${escaparHTML(p.producto)}</h4>
-                <p>${p.registros} establecimiento(s) reportan esta falta</p>
+                <p>${cantidadEstablecimientos} establecimiento(s) reportan esta falta</p>
             </div>
             <div class="critical-number">
                 ${p.demanda_total} unidades
@@ -2403,6 +2426,76 @@ async function exportarCSV() {
     }
 }
 
+// Función para exportar solo el resumen en Excel
+async function exportarResumenExcel() {
+    try {
+        if (typeof XLSX === 'undefined') {
+            mostrarNotificacion('Error: La librería XLSX no está cargada', 'warning');
+            return;
+        }
+
+        // Obtener datos según rol
+        let datos;
+        if (auth.esAdmin && auth.esAdmin()) {
+            // Admin: cargar todos los datos frescos desde AppScript
+            mostrarNotificacion('Cargando todos los datos para generar resumen...', 'info');
+            try {
+                datos = await cargarRegistrosDesdeAppScript();
+            } catch (error) {
+                console.warn('Error al cargar desde AppScript, usando datos del localStorage:', error);
+                datos = obtenerDatos();
+            }
+        } else {
+            // Centro: datos filtrados actuales
+            datos = datosActualesFiltrados || obtenerDatos();
+        }
+
+        if (!datos || datos.length === 0) {
+            mostrarNotificacion('No hay datos para generar resumen', 'info');
+            return;
+        }
+
+        console.log('✓ Generando resumen con', datos.length, 'registros');
+
+        // Generar resumen por centro
+        const resumenPorCentro = generarResumenPorCentro(datos);
+        
+        if (!resumenPorCentro || resumenPorCentro.length === 0) {
+            mostrarNotificacion('No hay datos de resumen para exportar', 'warning');
+            return;
+        }
+
+        console.log('✓ Resumen con', resumenPorCentro.length, 'centros');
+        
+        // Crear workbook y agregar hojas
+        const wb = XLSX.utils.book_new();
+        
+        // Hoja 1: Resumen General
+        const wsResumen = crearHojaResumen(resumenPorCentro);
+        XLSX.utils.book_append_sheet(wb, wsResumen, "Resumen General");
+        
+        // Hoja 2: Productos Críticos
+        const wsCriticos = crearHojaProductosCriticos(resumenPorCentro);
+        XLSX.utils.book_append_sheet(wb, wsCriticos, "Productos Críticos");
+
+        // Generar nombre de archivo
+        const fecha = new Date().toISOString().split('T')[0];
+        const centroActual = auth.obtenerCentroActual && auth.obtenerCentroActual();
+        const nombreArchivo = auth.esAdmin && auth.esAdmin()
+            ? `Resumen_Recetas_NoAtendidas_${fecha}.xlsx`
+            : `Resumen_${(centroActual || 'Centro').replace(/\s+/g, '_')}_${fecha}.xlsx`;
+
+        // Descargar archivo
+        XLSX.writeFile(wb, nombreArchivo);
+        mostrarNotificacion('Resumen descargado exitosamente', 'success');
+        console.log('✓ Archivo descargado:', nombreArchivo);
+        
+    } catch (error) {
+        console.error('Error al exportar resumen Excel:', error);
+        mostrarNotificacion('Error al exportar resumen: ' + error.message, 'warning');
+    }
+}
+
 // Generar resumen por centro
 function generarResumenPorCentro(datos) {
     const resumen = {};
@@ -2473,7 +2566,8 @@ function generarResumenPorCentro(datos) {
             totalDemandaNoSatisfecha: item.totalDemandaNoSatisfecha,
             coberturaPromedio: parseFloat(coberturaPromedio),
             tiposServicio: item.tiposServicio.size,
-            productosCriticosTop: productosCriticosTexto
+            productosCriticosTop: productosCriticosTop, // Array detallado
+            productosCriticosTexto: productosCriticosTexto // Texto para hoja resumen
         };
     });
 }
@@ -2488,8 +2582,7 @@ function crearHojaResumen(resumen) {
         'Total Disponible',
         'Demanda No Satisfecha',
         'Cobertura Promedio (%)',
-        'Tipos de Servicio',
-        'Productos Críticos (Top 5)'
+        'Tipos de Servicio'
     ];
     
     const datosResumen = resumen.map(item => [
@@ -2500,8 +2593,7 @@ function crearHojaResumen(resumen) {
         item.totalDisponible,
         item.totalDemandaNoSatisfecha,
         item.coberturaPromedio,
-        item.tiposServicio,
-        item.productosCriticosTop || 'Ninguno'
+        item.tiposServicio
     ]);
     
     const ws = XLSX.utils.aoa_to_sheet([encabezados, ...datosResumen]);
@@ -2515,21 +2607,41 @@ function crearHojaResumen(resumen) {
         { wch: 18 },  // Total Disponible
         { wch: 22 },  // Demanda No Satisfecha
         { wch: 20 },  // Cobertura Promedio (%)
-        { wch: 18 },  // Tipos de Servicio
-        { wch: 50 }   // Productos Críticos
+        { wch: 18 }   // Tipos de Servicio
     ];
     
-    // Ajustar ancho de columnas para mejor visualización
+    return ws;
+}
+
+// Crear hoja de productos críticos
+function crearHojaProductosCriticos(resumen) {
+    const encabezados = ['Centro', 'Producto', 'Demanda No Satisfecha'];
+    const datosProductos = [];
+    
+    resumen.forEach(item => {
+        if (item.productosCriticosTop && item.productosCriticosTop.length > 0) {
+            item.productosCriticosTop.forEach(producto => {
+                datosProductos.push([
+                    item.centro,
+                    producto.producto,
+                    producto.demanda
+                ]);
+            });
+        }
+    });
+    
+    // Si no hay productos críticos, agregar mensaje
+    if (datosProductos.length === 0) {
+        datosProductos.push(['Sin datos', 'No hay productos críticos registrados', 0]);
+    }
+    
+    const ws = XLSX.utils.aoa_to_sheet([encabezados, ...datosProductos]);
+    
+    // Ajustar ancho de columnas
     ws['!cols'] = [
         { wch: 30 },  // Centro
-        { wch: 15 },  // Total Registros
-        { wch: 18 },  // Productos Únicos
-        { wch: 18 },  // Total Requerida
-        { wch: 18 },  // Total Disponible
-        { wch: 22 },  // Demanda No Satisfecha
-        { wch: 20 },  // Cobertura Promedio (%)
-        { wch: 18 },  // Tipos de Servicio
-        { wch: 50 }   // Productos Críticos
+        { wch: 60 },  // Producto
+        { wch: 25 }   // Demanda No Satisfecha
     ];
     
     return ws;
@@ -2975,15 +3087,30 @@ function mostrarAplicacion() {
     // Aplicar permisos y deshabilitar campos para usuarios de centro
     aplicarPermisosEstablecimientos();
     
-    // Mostrar/ocultar botón de admin
+    // Mostrar/ocultar botón de admin y secciones solo para administradores
+    const esAdmin = auth.esAdmin && auth.esAdmin();
     const btnAdmin = DOMCache.get('btnAdmin');
+    const btnExportarResumen = document.getElementById('btnExportarResumen');
+    const statsSection = document.querySelector('.stats-section');
+    const criticalSection = document.querySelector('.critical-section');
+
     if (btnAdmin) {
-        if (auth.esAdmin()) {
+        if (esAdmin) {
             btnAdmin.classList.remove('btn-hidden');
         } else {
             btnAdmin.classList.add('btn-hidden');
         }
     }
+
+    // Secciones solo admin: resumen general, exportar resumen y productos críticos
+    [btnExportarResumen, statsSection, criticalSection].forEach(el => {
+        if (!el) return;
+        if (esAdmin) {
+            el.classList.remove('solo-admin-hidden');
+        } else {
+            el.classList.add('solo-admin-hidden');
+        }
+    });
     
     // Event listeners
     const btnLogout = DOMCache.get('btnLogout');
