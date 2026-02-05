@@ -1,0 +1,417 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Diagrama de Arquitectura - Recetas No Atendidas</title>
+    <script>
+        var config = {
+            startOnLoad: true,
+            theme: 'default',
+            securityLevel: 'loose',
+            logLevel: 'debug'
+        };
+        if(window.mermaid){
+            window.mermaid.initialize(config);
+        }
+    </script>
+    <script src="https://cdn.jsdelivr.net/npm/mermaid@10.0.0/dist/mermaid.min.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+        
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            overflow: hidden;
+        }
+        
+        header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 30px;
+            text-align: center;
+        }
+        
+        header h1 {
+            font-size: 2.5em;
+            margin-bottom: 10px;
+        }
+        
+        header p {
+            font-size: 1.1em;
+            opacity: 0.9;
+        }
+        
+        .content {
+            padding: 30px;
+        }
+        
+        .diagram-section {
+            margin: 30px 0;
+            padding: 20px;
+            background: #f8f9fa;
+            border-radius: 8px;
+            border-left: 4px solid #667eea;
+        }
+        
+        .diagram-section h2 {
+            color: #667eea;
+            margin-bottom: 20px;
+            font-size: 1.5em;
+        }
+        
+        .mermaid {
+            display: flex;
+            justify-content: center;
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            overflow-x: auto;
+        }
+        
+        .legend {
+            margin-top: 30px;
+            padding: 20px;
+            background: #e8f4f8;
+            border-radius: 8px;
+            border-left: 4px solid #0288d1;
+        }
+        
+        .legend h3 {
+            color: #0288d1;
+            margin-bottom: 15px;
+        }
+        
+        .legend-item {
+            margin: 10px 0;
+            padding: 8px;
+            background: white;
+            border-radius: 4px;
+            border-left: 3px solid #0288d1;
+        }
+        
+        .legend-item strong {
+            color: #667eea;
+        }
+        
+        footer {
+            background: #f8f9fa;
+            padding: 20px;
+            text-align: center;
+            color: #666;
+            border-top: 1px solid #ddd;
+        }
+        
+        svg.mermaid {
+            width: 100% !important;
+            height: auto !important;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>🏥 Sistema de Recetas No Atendidas</h1>
+            <p>Diagrama de Arquitectura y Flujo del Sistema</p>
+        </header>
+        
+        <div class="content">
+            <!-- DIAGRAMA 1: ARQUITECTURA GENERAL -->
+            <div class="diagram-section">
+                <h2>1️⃣ Arquitectura General del Sistema</h2>
+                <div class="mermaid">
+                    graph TB
+                        subgraph Frontend["🖥️ FRONTEND - HTML/CSS/JavaScript"]
+                            Login["🔐 Pantalla de Login<br/>auth.js"]
+                            UI["📋 Interfaz Principal<br/>index.html / script.js"]
+                            Excel["📊 Carga Excel<br/>XLSX.js"]
+                        end
+                        
+                        subgraph Local["💾 Almacenamiento Local"]
+                            LocalStorage["LocalStorage Browser"]
+                            CatalogoExcel["Catálogo Establecimientos<br/>Medicamentos<br/>Tipos de Servicio"]
+                        end
+                        
+                        subgraph Backend["☁️ BACKEND - Google Apps Script"]
+                            AppScript["Google Apps Script<br/>Apps_Script_Completo.gs"]
+                            Auth2["Autenticación<br/>& Usuarios"]
+                            Logic["Lógica de Negocio<br/>Validaciones"]
+                        end
+                        
+                        subgraph Database["📊 Google Sheets"]
+                            UsersSheet["Hoja: USUARIOS<br/>Credenciales"]
+                            RecetasSheet["Hoja: RECETAS<br/>Datos Guardados"]
+                            EntradasSheet["Hoja: ENTRADAS<br/>Registros"]
+                        end
+                        
+                        Login -->|Valida| Auth2
+                        UI -->|Lee| CatalogoExcel
+                        UI -->|Guarda| AppScript
+                        AppScript -->|Autentica| Auth2
+                        AppScript -->|Escribe| Database
+                        AppScript -->|Lee| Database
+                        Excel -->|Carga| CatalogoExcel
+                        LocalStorage -->|Almacena| UI
+                        
+                        style Frontend fill:#e3f2fd
+                        style Backend fill:#fff3e0
+                        style Database fill:#f3e5f5
+                        style Local fill:#e8f5e9
+                </div>
+            </div>
+            
+            <!-- DIAGRAMA 2: FLUJO DE AUTENTICACIÓN -->
+            <div class="diagram-section">
+                <h2>2️⃣ Flujo de Autenticación y Control de Acceso</h2>
+                <div class="mermaid">
+                    graph TD
+                        A["👤 Usuario Abre Aplicación"] -->|index.html| B["¿Está Autenticado?"]
+                        B -->|No| C["📱 Pantalla de Login"]
+                        B -->|Sí| D["✅ Ir a Aplicación"]
+                        
+                        C -->|Selecciona| E{Tipo de Acceso}
+                        E -->|Admin| F["👨‍💼 Admin Login<br/>Usuario: admin<br/>Contraseña: admin123"]
+                        E -->|Centro| G["🏥 Centro Login<br/>Selecciona Centro<br/>Usuario y Contraseña"]
+                        
+                        F -->|Envía| H["Google Apps Script<br/>Valida en USUARIOS Sheet"]
+                        G -->|Envía| H
+                        
+                        H -->|Válido| I["✅ Crea Token<br/>Guarda en localStorage"]
+                        H -->|Inválido| J["❌ Muestra Error<br/>Reintentar"]
+                        
+                        I -->|Redirige| D
+                        D -->|Admin| K["⚙️ Acceso a:<br/>- Gestión de Usuarios<br/>- Ver Todo Datos"]
+                        D -->|Centro| L["🔒 Acceso Restringido:<br/>- Solo Datos de tu Centro<br/>- Sin Gestión de Usuarios"]
+                        
+                        style A fill:#fff9c4
+                        style K fill:#c8e6c9
+                        style L fill:#c8e6c9
+                        style J fill:#ffccbc
+                </div>
+            </div>
+            
+            <!-- DIAGRAMA 3: FLUJO DE CREACIÓN DE USUARIO (ADMIN) -->
+            <div class="diagram-section">
+                <h2>3️⃣ Crear Nuevo Usuario del Centro (Como ADMIN)</h2>
+                <div class="mermaid">
+                    graph LR
+                        A["👨‍💼 ADMIN<br/>Logueado"] -->|Click| B["⚙️ Gestión<br/>de Usuarios"]
+                        B -->|Abre Modal| C["📝 Formulario<br/>de Creación"]
+                        
+                        C -->|Ingresa| D["✏️ Datos:<br/>- Nombre Usuario<br/>- Contraseña<br/>- Rol<br/>- Centro"]
+                        
+                        D -->|Click| E["Crear Usuario<br/>Button"]
+                        
+                        E -->|Script.js| F["📋 Validaciones:<br/>- Usuario único?<br/>- Centro existe?"]
+                        
+                        F -->|Válido| G["☁️ Google Apps Script<br/>Crea registro"]
+                        F -->|Inválido| H["❌ Muestra Error"]
+                        
+                        G -->|Escribe en| I["📊 Sheet USUARIOS<br/>Nueva Fila"]
+                        I -->|Retorna| J["✅ Éxito!<br/>Usuario Creado"]
+                        
+                        J -->|Muestra| K["✓ Usuario 'nombre'<br/>creado exitosamente"]
+                        
+                        style A fill:#ffe0b2
+                        style J fill:#c8e6c9
+                        style H fill:#ffccbc
+                </div>
+            </div>
+            
+            <!-- DIAGRAMA 4: FLUJO DE REGISTRO DE RECETA -->
+            <div class="diagram-section">
+                <h2>4️⃣ Registro de Receta No Atendida (Centro de Salud)</h2>
+                <div class="mermaid">
+                    graph TD
+                        A["🏥 Usuario Centro<br/>Logueado"] -->|Ve| B["📋 Formulario:<br/>- COD PRE<br/>- Producto<br/>- Cantidad<br/>- Motivo<br/>- Etc."]
+                        
+                        B -->|Completa| C["📝 Ingresa Datos"]
+                        
+                        C -->|Autocomplete| D["🔍 Sugerencias:<br/>- Productos<br/>- Tipos Servicio<br/>- Centros"]
+                        
+                        D -->|Usa Catálogos| E["📊 Cargados de:<br/>- catalogo_establecimientos.json<br/>- medicamentos.json<br/>- tipos_servicio.xlsx"]
+                        
+                        C -->|Click| F["💾 Guardar Receta"]
+                        
+                        F -->|Valida| G["✅ Verificaciones:<br/>- Campos obligatorios<br/>- Centro del usuario<br/>- Formato datos"]
+                        
+                        G -->|Válido| H["☁️ POST a Apps Script<br/>Envía JSON"]
+                        G -->|Inválido| I["❌ Muestra Errores"]
+                        
+                        H -->|Recibe| J["Google Apps Script<br/>doPost"]
+                        
+                        J -->|Procesa| K["⚙️ Funciones:<br/>- Validaciones<br/>- Inserta registro<br/>- Formatea datos"]
+                        
+                        K -->|Escribe en| L["📊 Sheet ENTRADAS<br/>Nueva Fila con<br/>COD PRE (5 dígitos)<br/>Código Producto (5 dígitos)"]
+                        
+                        L -->|Retorna| M["✅ JSON Response<br/>Status: success"]
+                        
+                        M -->|Recibe| N["🎉 Éxito!<br/>Registrado en Sheets<br/>Formulario se limpia"]
+                        
+                        style A fill:#bbdefb
+                        style N fill:#c8e6c9
+                        style I fill:#ffccbc
+                        style L fill:#f3e5f5
+                </div>
+            </div>
+            
+            <!-- DIAGRAMA 5: FLUJO DE DATOS Y FILTRADO -->
+            <div class="diagram-section">
+                <h2>5️⃣ Carga y Filtrado de Datos en Tabla</h2>
+                <div class="mermaid">
+                    graph TD
+                        A["⬇️ Carga Inicial<br/>O Click Refrescar"] -->|GET| B["Google Apps Script<br/>getRecetas?action=getRecetas"]
+                        
+                        B -->|Lee| C["📊 Sheet RECETAS<br/>Todas las filas"]
+                        
+                        C -->|Retorna| D["JSON Array<br/>Todos los registros"]
+                        
+                        D -->|Recibe en| E["Script.js<br/>cargarYMostrarRecetas"]
+                        
+                        E -->|¿Usuario es?| F{Tipo de Usuario}
+                        
+                        F -->|ADMIN| G["✅ Muestra TODOS<br/>los registros<br/>de todos los centros"]
+                        F -->|CENTRO| H["🔒 Filtra:<br/>Solo registros<br/>del Centro del Usuario"]
+                        
+                        G -->|Renderiza| I["📋 Tabla HTML<br/>Mostrando todos datos"]
+                        H -->|Renderiza| J["📋 Tabla HTML<br/>Solo datos del centro"]
+                        
+                        I --> K["🔍 Búsqueda/Filtro<br/>Usuario puede filtrar<br/>más por otros campos"]
+                        J --> K
+                        
+                        style G fill:#c8e6c9
+                        style H fill:#c8e6c9
+                        style K fill:#fff9c4
+                </div>
+            </div>
+            
+            <!-- CARACTERÍSTICAS PRINCIPALES -->
+            <div class="diagram-section">
+                <h2>🎯 Características Principales del Sistema</h2>
+                <div class="feature-grid">
+                    <div class="feature-card">
+                        <h3>🔐 Autenticación y Control de Acceso</h3>
+                        <ul>
+                            <li>Login tipo Admin y Centro</li>
+                            <li>Credenciales en Google Sheets</li>
+                            <li>Tokens JWT en localStorage</li>
+                            <li>Restricción de datos por rol</li>
+                        </ul>
+                    </div>
+                    
+                    <div class="feature-card">
+                        <h3>📊 Gestión de Usuarios</h3>
+                        <ul>
+                            <li>Admin crea usuarios por centro</li>
+                            <li>Cada usuario solo ve su centro</li>
+                            <li>Lista de usuarios creados</li>
+                            <li>Validaciones de datos</li>
+                        </ul>
+                    </div>
+                    
+                    <div class="feature-card">
+                        <h3>📋 Registro de Recetas</h3>
+                        <ul>
+                            <li>Formulario autocomplete</li>
+                            <li>Validación de campos</li>
+                            <li>Envío a Google Sheets</li>
+                            <li>Formateo de códigos (5 dígitos)</li>
+                        </ul>
+                    </div>
+                    
+                    <div class="feature-card">
+                        <h3>📊 Catálogos y Datos</h3>
+                        <ul>
+                            <li>Establecimientos desde Excel</li>
+                            <li>Medicamentos desde JSON</li>
+                            <li>Tipos de servicio desde Excel</li>
+                            <li>Cache en navegador local</li>
+                        </ul>
+                    </div>
+                    
+                    <div class="feature-card">
+                        <h3>🔍 Búsqueda y Filtrado</h3>
+                        <ul>
+                            <li>Autocompletado de productos</li>
+                            <li>Filtros en tabla de datos</li>
+                            <li>Búsqueda en tiempo real</li>
+                            <li>Debounce optimizado</li>
+                        </ul>
+                    </div>
+                    
+                    <div class="feature-card">
+                        <h3>☁️ Integración Google</h3>
+                        <ul>
+                            <li>Google Apps Script backend</li>
+                            <li>Google Sheets como BD</li>
+                            <li>Sincronización en tiempo real</li>
+                            <li>Respuestas JSON</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- LEYENDA -->
+            <div class="legend">
+                <h3>📚 Leyenda de Componentes</h3>
+                <div class="legend-item">
+                    <strong>Frontend:</strong> Interfaz del usuario (HTML, CSS, JavaScript)
+                </div>
+                <div class="legend-item">
+                    <strong>Backend:</strong> Google Apps Script (lógica de servidor)
+                </div>
+                <div class="legend-item">
+                    <strong>Base de Datos:</strong> Google Sheets (almacenamiento)
+                </div>
+                <div class="legend-item">
+                    <strong>LocalStorage:</strong> Almacenamiento en navegador del cliente
+                </div>
+                <div class="legend-item">
+                    <strong>Catálogos:</strong> Datos estáticos cargados desde Excel/JSON
+                </div>
+                <div class="legend-item">
+                    <strong>Auth:</strong> Sistema de autenticación y autorización
+                </div>
+            </div>
+            
+            <!-- FLUJO RÁPIDO -->
+            <div class="diagram-section" style="background: #fff3e0; border-left-color: #ff9800;">
+                <h2 style="color: #ff9800;">⚡ Flujo Rápido de Uso</h2>
+                <div style="line-height: 2; color: #555; font-size: 1.05em;">
+                    <p><strong>Paso 1:</strong> 👨‍💼 Admin se autentica con usuario: <code style="background: #fff; padding: 2px 5px; border-radius: 3px;">admin / admin123</code></p>
+                    <p><strong>Paso 2:</strong> ⚙️ Admin abre "Gestión de Usuarios" y crea usuario para cada centro</p>
+                    <p><strong>Paso 3:</strong> 🏥 Usuario del Centro se autentica con sus credenciales</p>
+                    <p><strong>Paso 4:</strong> 📋 Completa formulario de Receta No Atendida</p>
+                    <p><strong>Paso 5:</strong> 💾 Guarda registro → se almacena en Google Sheets</p>
+                    <p><strong>Paso 6:</strong> 📊 Datos aparecen en tabla (solo su centro si es usuario, todos si es admin)</p>
+                </div>
+            </div>
+        </div>
+        
+        <footer>
+            <p>📊 Diagrama de Arquitectura - Recetas No Atendidas | Generado con Mermaid</p>
+            <p style="margin-top: 10px; font-size: 0.9em; color: #999;">Sistema de gestión de recetas no atendidas para centros de salud</p>
+        </footer>
+    </div>
+    
+    <script>
+        if(window.mermaid) {
+            mermaid.contentLoaded();
+        }
+    </script>
+</body>
+</html>

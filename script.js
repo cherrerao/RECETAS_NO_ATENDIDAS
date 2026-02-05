@@ -5,7 +5,7 @@ const STORAGE_KEY = 'recetas_no_atendidas';
 const MAX_SUGERENCIAS = 15;
 const DEBOUNCE_DELAY = 300; // ms para búsquedas
 // URL del Web App de Apps Script (para integrarlo con AppSheet/Google Sheets)
-const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbyfRvelg1LV7vUynZbS9mrU6SlePSjgJ2mIBcgQJ0xWaDbMlvN_VUJEJjD9Sny0qXbv/exec';
+const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbxUwkO7SRqoiBRReI9a73nFzpZTUukmXmsrTJXukwv-VE8HtbDTW7z3QZa6acIYHqJx/exec';
 
 // Variable global para almacenar catálogo cargado
 let CATALOGO_ESTABLECIMIENTOS = {
@@ -315,52 +315,52 @@ function establecerFechaHoy() {
     fechaInput.value = hoy;
 }
 
-// Cargar mapa COD PRE al inicio (desde catalogo-redes.xlsx)
+// Cargar mapa COD PRE al inicio (desde catalogo_establecimientos.json)
 async function cargarMapaCodPreGlobal() {
     try {
-        const rutaCatalogo = './catalogo-redes.xlsx';
-        const resp = await fetch(rutaCatalogo);
+        const resp = await fetch('catalogo_establecimientos.json');
         if (!resp || !resp.ok) {
-            console.warn('No se pudo cargar catalogo-redes.xlsx para COD PRE');
+            console.warn('No se pudo cargar catalogo_establecimientos.json para COD PRE');
             window.mapaCodPre = {};
             return;
         }
-        const buf = await resp.arrayBuffer();
-        const wbCatalog = XLSX.read(buf, { type: 'array' });
-        const sh = wbCatalog.Sheets[wbCatalog.SheetNames[0]];
-        const rows = XLSX.utils.sheet_to_json(sh, { header: 1, defval: '' });
         
+        const data = await resp.json();
         const mapaCodPre = {};
-        if (rows && rows.length > 0) {
-            const headerRow = rows[0].map(h => (h || '').toString().toUpperCase());
-            let idxEst = -1, idxCodPre = -1;
-            
-            // Buscar columnas en las primeras 5 filas
-            for (let r = 0; r < Math.min(5, rows.length); r++) {
-                const row = rows[r].map(c => (c || '').toString().toUpperCase());
-                for (let i = 0; i < row.length; i++) {
-                    const h = row[i];
-                    if (idxEst === -1 && (h.includes('ESTABLECIMIENTO') || h.includes('CENTRO') || h.includes('ESTABLE'))) idxEst = i;
-                    if (idxCodPre === -1 && (h.includes('COD PRE') || h.includes('CODPRE') || h.includes('COD'))) idxCodPre = i;
+        
+        // Función para normalizar nombres (consistente con exportarResumenExcel)
+        const normalizarNombre = (text) => {
+            return (text || '')
+                .toString()
+                .trim()
+                .toUpperCase()
+                .replace(/\s+/g, ' ')      // espacios múltiples a uno
+                .replace(/\./g, '')         // quitar puntos
+                .replace(/\s*-\s*/g, '-');  // normalizar guiones
+        };
+        
+        // Extraer establecimientos de todas las redes
+        if (data.redes && Array.isArray(data.redes)) {
+            data.redes.forEach(red => {
+                if (red.establecimientos && Array.isArray(red.establecimientos)) {
+                    red.establecimientos.forEach(est => {
+                        if (est.nombre && est.cod_pre) {
+                            const nombreNormalizado = normalizarNombre(est.nombre);
+                            const cod = est.cod_pre.toString().trim();
+                            mapaCodPre[nombreNormalizado] = cod;
+                        }
+                    });
                 }
-                if (idxEst !== -1 && idxCodPre !== -1) break;
-            }
-            
-            if (idxEst !== -1 && idxCodPre !== -1) {
-                for (let r = 1; r < rows.length; r++) {
-                    const row = rows[r];
-                    const nombre = (row[idxEst] || '').toString().trim().toUpperCase();
-                    const cod = (row[idxCodPre] || '').toString().trim();
-                    if (nombre && cod) mapaCodPre[nombre] = cod;
-                }
-            }
+            });
         }
         
         window.mapaCodPre = mapaCodPre;
-        console.log('✓ Mapa COD PRE cargado:', Object.keys(mapaCodPre).length, 'establecimientos');
+        window.mapaCodPreNorm = null;
+        console.log('✓ Mapa COD PRE cargado desde JSON:', Object.keys(mapaCodPre).length, 'establecimientos');
     } catch (e) {
         console.warn('Error al cargar mapa COD PRE:', e && e.message ? e.message : e);
         window.mapaCodPre = {};
+        window.mapaCodPreNorm = null;
     }
 }
 
@@ -383,6 +383,7 @@ async function cargarCatalogoDesdeExcel() {
             establecimientos: red.establecimientos.map(e => e.nombre)
         }));
         CATALOGO_ESTABLECIMIENTOS.datos_raw = data.redes;
+        window.mapaCodPreNorm = null;
         // Mostrar cantidad en el status
         const statusEl = document.getElementById('establecimientosStatus');
         if (statusEl) {
@@ -411,6 +412,48 @@ async function cargarCatalogoDesdeExcel() {
         console.error('❌ Error cargando catálogo de establecimientos:', error.message, error);
         cargarCatalogoPorDefecto();
     }
+}
+
+function normalizarNombreEstablecimiento(nombre) {
+    if (!nombre) return '';
+    let n = nombre.toString().toUpperCase();
+    try {
+        n = n.normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+    } catch (e) {}
+    n = n.replace(/[^A-Z0-9\s]/g, ' ');
+    n = n.replace(/\s+/g, ' ').trim();
+    n = n.replace(/^(PSMC|PS|CS)\s+/, '');
+    return n;
+}
+
+function obtenerCodPrePorNombre(establecimientoNombre) {
+    const key = normalizarNombreEstablecimiento(establecimientoNombre);
+    if (!key) return '';
+
+    if (!window.mapaCodPreNorm) {
+        const mapa = {};
+        if (window.mapaCodPre && typeof window.mapaCodPre === 'object') {
+            Object.keys(window.mapaCodPre).forEach(nombre => {
+                const k = normalizarNombreEstablecimiento(nombre);
+                if (k && !mapa[k]) mapa[k] = window.mapaCodPre[nombre];
+            });
+        }
+        if (CATALOGO_ESTABLECIMIENTOS && Array.isArray(CATALOGO_ESTABLECIMIENTOS.datos_raw)) {
+            CATALOGO_ESTABLECIMIENTOS.datos_raw.forEach(red => {
+                if (red && Array.isArray(red.establecimientos)) {
+                    red.establecimientos.forEach(est => {
+                        const nombre = est && est.nombre ? est.nombre : '';
+                        const cod = est && est.cod_pre ? est.cod_pre : '';
+                        const k = normalizarNombreEstablecimiento(nombre);
+                        if (k && cod && !mapa[k]) mapa[k] = cod;
+                    });
+                }
+            });
+        }
+        window.mapaCodPreNorm = mapa;
+    }
+
+    return window.mapaCodPreNorm[key] || '';
 }
 
 // Catálogo por defecto en caso de error
@@ -907,32 +950,50 @@ const filtrarProductosDebounced = debounce(() => {
         return;
     }
 
-    // Separar resultados en dos grupos: que comienzan con la búsqueda y que la contienen
-    const comienzan = [];
-    const contienen = [];
-
-    CATALOGO_MEDICAMENTOS.unicos.forEach(med => {
-        const codigo = (med.codigo || '').toLowerCase();
-        const descripcion = (med.descripcion || '').toLowerCase();
-        const categoria = (med.categoria || '').toLowerCase();
-        
-        const coincideEnCodigo = codigo.includes(busqueda);
-        const coincideEnDescripcion = descripcion.includes(busqueda);
-        const coincideEnCategoria = categoria.includes(busqueda);
-
-        // Si coincide en algún campo
-        if (coincideEnCodigo || coincideEnDescripcion || coincideEnCategoria) {
-            // Priorizar: si comienza con la búsqueda en código o descripción, va a "comienzan"
-            if (codigo.startsWith(busqueda) || descripcion.startsWith(busqueda)) {
-                comienzan.push(med);
-            } else {
-                contienen.push(med);
-            }
-        }
-    });
-
-    // Combinar: primero los que comienzan, luego los que contienen
-    const resultados = [...comienzan, ...contienen].slice(0, MAX_SUGERENCIAS);
+    // Filtrar medicamentos que coincidan con la búsqueda
+    const resultados = CATALOGO_MEDICAMENTOS.unicos
+        .filter(med => {
+            const codigo = (med.codigo || '').toLowerCase();
+            const descripcion = (med.descripcion || '').toLowerCase();
+            const categoria = (med.categoria || '').toLowerCase();
+            
+            return codigo.includes(busqueda) || 
+                   descripcion.includes(busqueda) || 
+                   categoria.includes(busqueda);
+        })
+        .sort((a, b) => {
+            // Función para calcular relevancia de un medicamento
+            const calcularRelevancia = (med) => {
+                const codigo = (med.codigo || '').toLowerCase();
+                const descripcion = (med.descripcion || '').toLowerCase();
+                
+                let puntos = 0;
+                
+                // Mayor puntuación si coincide al inicio del código (coincidencia exacta o al principio)
+                if (codigo.startsWith(busqueda)) {
+                    puntos += 100;
+                } else if (codigo.includes(busqueda)) {
+                    puntos += 50;
+                }
+                
+                // Mayor puntuación si coincide al inicio de la descripción
+                if (descripcion.startsWith(busqueda)) {
+                    puntos += 80;
+                } else if (descripcion.includes(busqueda)) {
+                    puntos += 40;
+                }
+                
+                // Penalizar si solo aparece en categoría
+                if (puntos === 0) {
+                    puntos = 10;
+                }
+                
+                return puntos;
+            };
+            
+            return calcularRelevancia(b) - calcularRelevancia(a);
+        })
+        .slice(0, MAX_SUGERENCIAS);
 
     if (resultados.length === 0) {
         sugerenciasDiv.innerHTML = '<div class="sugerencia-item" style="color: #999;">No se encontraron medicamentos</div>';
@@ -1260,6 +1321,7 @@ function agregarEventListeners() {
     const formRegistro = DOMCache.get('formRegistro');
     const btnLimpiar = DOMCache.get('btnLimpiar');
     const btnExportar = DOMCache.get('btnExportar');
+    const btnDescargarResumenExcel = DOMCache.get('btnDescargarResumenExcel');
     const filtroBusqueda = DOMCache.filtroBusqueda;
     const cantidadRequerida = DOMCache.get('cantidad_requerida');
     const cantidadDisponible = DOMCache.get('cantidad_disponible');
@@ -1276,10 +1338,8 @@ function agregarEventListeners() {
         btnExportar.addEventListener('click', exportarCSV);
     }
     
-    // Event listener para exportar resumen en Excel
-    const btnExportarResumen = DOMCache.get('btnExportarResumen');
-    if (btnExportarResumen) {
-        btnExportarResumen.addEventListener('click', exportarResumenExcel);
+    if (btnDescargarResumenExcel) {
+        btnDescargarResumenExcel.addEventListener('click', exportarResumenExcel);
     }
     
     if (filtroBusqueda) {
@@ -1452,6 +1512,12 @@ async function agregarRegistro(e) {
             // Formatear a 5 dígitos: 1 -> 00001
             const numCodPre = parseInt(codPreRaw, 10);
             cod_pre = isNaN(numCodPre) ? codPreRaw : String(numCodPre).padStart(5, '0');
+        } else {
+            const codPreFallback = obtenerCodPrePorNombre(registro.establecimiento);
+            if (codPreFallback) {
+                const numCodPre = parseInt(codPreFallback, 10);
+                cod_pre = isNaN(numCodPre) ? codPreFallback : String(numCodPre).padStart(5, '0');
+            }
         }
 
         // Separar código y nombre del producto si es posible
@@ -2105,7 +2171,7 @@ function actualizarEstadisticas(datos) {
 function actualizarProductosCriticos(datos) {
     const productosCon = new Map();
 
-    // Agrupar por producto y contar establecimientos ÚNICOS
+    // Agrupar por producto y sumar demanda no satisfecha (usando Map para mejor rendimiento)
     datos.forEach(registro => {
         if (registro.demanda_no_satisfecha > 0) {
             const clave = registro.producto;
@@ -2113,12 +2179,12 @@ function actualizarProductosCriticos(datos) {
                 productosCon.set(clave, {
                     producto: registro.producto,
                     demanda_total: 0,
-                    establecimientos: new Set() // Usar Set para contar establecimientos únicos
+                    registros: 0
                 });
             }
             const producto = productosCon.get(clave);
             producto.demanda_total += registro.demanda_no_satisfecha;
-            producto.establecimientos.add(registro.establecimiento); // Agregar establecimiento al Set
+            producto.registros += 1;
         }
     });
 
@@ -2140,11 +2206,10 @@ function actualizarProductosCriticos(datos) {
     productos.forEach(p => {
         const item = document.createElement('div');
         item.className = 'critical-item';
-        const cantidadEstablecimientos = p.establecimientos.size; // Obtener cantidad de establecimientos únicos
         item.innerHTML = `
             <div class="critical-info">
                 <h4>${escaparHTML(p.producto)}</h4>
-                <p>${cantidadEstablecimientos} establecimiento(s) reportan esta falta</p>
+                <p>${p.registros} establecimiento(s) reportan esta falta</p>
             </div>
             <div class="critical-number">
                 ${p.demanda_total} unidades
@@ -2234,50 +2299,44 @@ async function exportarCSV() {
             return;
         }
 
-        // Intentar cargar mapa COD PRE desde catalogo-redes.xlsx (opcional)
+        // Intentar cargar mapa COD PRE desde catalogo_establecimientos.json
         let mapaCodPre = {};
+        
+        // Función para normalizar nombres (quitar puntos, espacios múltiples, etc)
+        const normalizarNombre = (text) => {
+            return (text || '')
+                .toString()
+                .trim()
+                .toUpperCase()
+                .replace(/\s+/g, ' ')      // espacios múltiples a uno
+                .replace(/\./g, '')         // quitar puntos
+                .replace(/\s*-\s*/g, '-');  // normalizar guiones
+        };
+        
         try {
-            const rutaCatalogo = './catalogo-redes.xlsx';
-            const resp = await fetch(rutaCatalogo);
+            const resp = await fetch('catalogo_establecimientos.json');
             if (resp && resp.ok) {
-                const buf = await resp.arrayBuffer();
-                const wbCatalog = XLSX.read(buf, { type: 'array' });
-                const sh = wbCatalog.Sheets[wbCatalog.SheetNames[0]];
-                const rows = XLSX.utils.sheet_to_json(sh, { header: 1, defval: '' });
-                if (rows && rows.length > 0) {
-                    // localizar índices
-                    const headerRow = rows[0].map(h => (h || '').toString().toUpperCase());
-                    let idxEst = -1, idxCodPre = -1;
-                    for (let i = 0; i < headerRow.length; i++) {
-                        const h = headerRow[i];
-                        if (h.includes('ESTABLECIMIENTO') || h.includes('CENTRO') || h.includes('ESTABLE')) idxEst = i;
-                        if (h.includes('COD PRE') || h.includes('CODPRE') || h.includes('COD PRE') ) idxCodPre = i;
-                    }
-                    // si no está en primera fila, intentar buscar en las primeras 5 filas
-                    if (idxEst === -1 || idxCodPre === -1) {
-                        for (let r = 0; r < Math.min(5, rows.length); r++) {
-                            const row = rows[r].map(c => (c || '').toString().toUpperCase());
-                            for (let i = 0; i < row.length; i++) {
-                                const h = row[i];
-                                if (idxEst === -1 && (h.includes('ESTABLECIMIENTO') || h.includes('CENTRO') || h.includes('ESTABLE'))) idxEst = i;
-                                if (idxCodPre === -1 && (h.includes('COD PRE') || h.includes('CODPRE') || h.includes('COD'))) idxCodPre = i;
-                            }
-                            if (idxEst !== -1 && idxCodPre !== -1) break;
+                const data = await resp.json();
+                // Extraer establecimientos de todas las redes
+                if (data.redes && Array.isArray(data.redes)) {
+                    data.redes.forEach(red => {
+                        if (red.establecimientos && Array.isArray(red.establecimientos)) {
+                            red.establecimientos.forEach(est => {
+                                if (est.nombre && est.cod_pre) {
+                                    const nombreNormalizado = normalizarNombre(est.nombre);
+                                    const cod = est.cod_pre.toString().trim();
+                                    mapaCodPre[nombreNormalizado] = cod;
+                                }
+                            });
                         }
-                    }
-
-                    if (idxEst !== -1 && idxCodPre !== -1) {
-                        for (let r = 1; r < rows.length; r++) {
-                            const row = rows[r];
-                            const nombre = (row[idxEst] || '').toString().trim().toUpperCase();
-                            const cod = (row[idxCodPre] || '').toString().trim();
-                            if (nombre) mapaCodPre[nombre] = cod;
-                        }
-                    }
+                    });
                 }
+                console.log('✓ Mapa de COD PRE cargado desde JSON - Primeros 5:', Object.keys(mapaCodPre).slice(0, 5));
+                console.log('  Total centros en mapa:', Object.keys(mapaCodPre).length);
+                console.log('  Buscando: "P S SANTA ROSA DE PACHACUTEC" ->', mapaCodPre['P S SANTA ROSA DE PACHACUTEC']);
             }
         } catch (e) {
-            console.warn('No se pudo cargar catalogo-redes.xlsx para COD PRE:', e && e.message ? e.message : e);
+            console.warn('No se pudo cargar catalogo_establecimientos.json para COD PRE:', e && e.message ? e.message : e);
         }
 
         // Exponer el mapa COD PRE globalmente para que otras operaciones (p.ej. guardar registro) lo utilicen
@@ -2320,7 +2379,7 @@ async function exportarCSV() {
 
         const datosHoja = datos.map((d, index) => {
             const establecimiento = (d.establecimiento || '').toString().trim();
-            const key = establecimiento.toUpperCase();
+            const key = normalizarNombre(establecimiento);
             let codPreVal = mapaCodPre[key] || '';
             // Formatear COD PRE a 5 dígitos
             if (codPreVal) {
@@ -2426,7 +2485,32 @@ async function exportarCSV() {
     }
 }
 
-// Función para exportar solo el resumen en Excel
+// Obtener lista de productos críticos
+function obtenerProductosCriticos() {
+    const datos = datosActualesFiltrados || [];
+    const productosCon = new Map();
+
+    datos.forEach(registro => {
+        if (registro.demanda_no_satisfecha > 0) {
+            const clave = registro.producto;
+            if (!productosCon.has(clave)) {
+                productosCon.set(clave, {
+                    producto: registro.producto,
+                    demandaTotal: 0,
+                    registros: 0
+                });
+            }
+            const producto = productosCon.get(clave);
+            producto.demandaTotal += registro.demanda_no_satisfecha;
+            producto.registros += 1;
+        }
+    });
+
+    return Array.from(productosCon.values())
+        .sort((a, b) => b.demandaTotal - a.demandaTotal);
+}
+
+// Exportar solo resumen estadístico en Excel
 async function exportarResumenExcel() {
     try {
         if (typeof XLSX === 'undefined') {
@@ -2434,65 +2518,96 @@ async function exportarResumenExcel() {
             return;
         }
 
-        // Obtener datos según rol
-        let datos;
-        if (auth.esAdmin && auth.esAdmin()) {
-            // Admin: cargar todos los datos frescos desde AppScript
-            mostrarNotificacion('Cargando todos los datos para generar resumen...', 'info');
-            try {
-                datos = await cargarRegistrosDesdeAppScript();
-            } catch (error) {
-                console.warn('Error al cargar desde AppScript, usando datos del localStorage:', error);
-                datos = obtenerDatos();
-            }
-        } else {
-            // Centro: datos filtrados actuales
-            datos = datosActualesFiltrados || obtenerDatos();
-        }
-
+        const datos = datosActualesFiltrados;
         if (!datos || datos.length === 0) {
-            mostrarNotificacion('No hay datos para generar resumen', 'info');
+            mostrarNotificacion('No hay datos para exportar', 'info');
             return;
         }
 
-        console.log('✓ Generando resumen con', datos.length, 'registros');
-
-        // Generar resumen por centro
-        const resumenPorCentro = generarResumenPorCentro(datos);
-        
-        if (!resumenPorCentro || resumenPorCentro.length === 0) {
-            mostrarNotificacion('No hay datos de resumen para exportar', 'warning');
-            return;
+        // Cargar mapa COD PRE desde catalogo_establecimientos.json
+        let mapaCodPre = {};
+        try {
+            const resp = await fetch('catalogo_establecimientos.json');
+            if (resp && resp.ok) {
+                const data = await resp.json();
+                // Extraer establecimientos de todas las redes
+                if (data.redes && Array.isArray(data.redes)) {
+                    data.redes.forEach(red => {
+                        if (red.establecimientos && Array.isArray(red.establecimientos)) {
+                            red.establecimientos.forEach(est => {
+                                if (est.nombre && est.cod_pre) {
+                                    const nombre = est.nombre.toString().trim().toUpperCase();
+                                    const cod = est.cod_pre.toString().trim();
+                                    // Normalizar espacios múltiples a uno solo
+                                    const nombreNormalizado = nombre.replace(/\s+/g, ' ');
+                                    mapaCodPre[nombreNormalizado] = cod;
+                                }
+                            });
+                        }
+                    });
+                }
+            }
+        } catch (e) {
+            console.warn('No se pudo cargar catalogo_establecimientos.json:', e && e.message ? e.message : e);
         }
 
-        console.log('✓ Resumen con', resumenPorCentro.length, 'centros');
-        
-        // Crear workbook y agregar hojas
+        // Crear workbook
         const wb = XLSX.utils.book_new();
-        
-        // Hoja 1: Resumen General
-        const wsResumen = crearHojaResumen(resumenPorCentro);
-        XLSX.utils.book_append_sheet(wb, wsResumen, "Resumen General");
-        
-        // Hoja 2: Productos Críticos
-        const wsCriticos = crearHojaProductosCriticos(resumenPorCentro);
-        XLSX.utils.book_append_sheet(wb, wsCriticos, "Productos Críticos");
 
-        // Generar nombre de archivo
+        // ==========================================
+        // HOJA 1: ESTADÍSTICAS GENERALES
+        // ==========================================
+        const statsData = [
+            ['RESUMEN GENERAL', ''],
+            ['', ''],
+            ['Total Registros', obtenerDatos().length],
+            ['Total Registros (Filtrados)', datos.length],
+            ['Productos Distintos', new Set(datos.map(d => d.codigo_producto)).size],
+            ['Establecimientos', new Set(datos.map(d => d.establecimiento)).size],
+            ['Total Demanda No Satisfecha', datos.reduce((sum, d) => sum + (parseInt(d.demanda_no_satisfecha) || 0), 0)],
+            ['', ''],
+            ['PRODUCTOS CRÍTICOS (Demanda > 0)', ''],
+            ['', '']
+        ];
+
+        const productosCriticos = obtenerProductosCriticos();
+        productosCriticos.forEach(pc => {
+            statsData.push([pc.producto, pc.demandaTotal]);
+        });
+
+        const ws1 = XLSX.utils.aoa_to_sheet(statsData);
+        ws1['!cols'] = [{ wch: 40 }, { wch: 15 }];
+
+        // Agregar estilos básicos
+        for (let row in ws1) {
+            if (row.startsWith('A') && !row.includes('!')) {
+                if (statsData[parseInt(row.substring(1)) - 1]?.[0]?.includes('RESUMEN') || 
+                    statsData[parseInt(row.substring(1)) - 1]?.[0]?.includes('CRÍTICOS')) {
+                    ws1[row].s = { font: { bold: true, size: 12 }, fill: { fgColor: { rgb: 'FF6B7280' } } };
+                }
+            }
+        }
+
+        XLSX.utils.book_append_sheet(wb, ws1, "Resumen");
+
+        // ==========================================
+        // HOJA 2: DETALLE POR CENTRO (Si es Admin)
+        // ==========================================
+        if (auth.esAdmin()) {
+            const resumenPorCentro = generarResumenPorCentro(datos);
+            const ws2 = crearHojaResumen(resumenPorCentro);
+            XLSX.utils.book_append_sheet(wb, ws2, "Por Centro");
+        }
+
+        // Generar archivo
         const fecha = new Date().toISOString().split('T')[0];
-        const centroActual = auth.obtenerCentroActual && auth.obtenerCentroActual();
-        const nombreArchivo = auth.esAdmin && auth.esAdmin()
-            ? `Resumen_Recetas_NoAtendidas_${fecha}.xlsx`
-            : `Resumen_${(centroActual || 'Centro').replace(/\s+/g, '_')}_${fecha}.xlsx`;
-
-        // Descargar archivo
+        const nombreArchivo = `Resumen_Recetas_${fecha}.xlsx`;
         XLSX.writeFile(wb, nombreArchivo);
+
         mostrarNotificacion('Resumen descargado exitosamente', 'success');
-        console.log('✓ Archivo descargado:', nombreArchivo);
-        
     } catch (error) {
-        console.error('Error al exportar resumen Excel:', error);
-        mostrarNotificacion('Error al exportar resumen: ' + error.message, 'warning');
+        console.error('Error al exportar resumen:', error);
+        mostrarNotificacion('Error al exportar: ' + error.message, 'warning');
     }
 }
 
@@ -2566,8 +2681,7 @@ function generarResumenPorCentro(datos) {
             totalDemandaNoSatisfecha: item.totalDemandaNoSatisfecha,
             coberturaPromedio: parseFloat(coberturaPromedio),
             tiposServicio: item.tiposServicio.size,
-            productosCriticosTop: productosCriticosTop, // Array detallado
-            productosCriticosTexto: productosCriticosTexto // Texto para hoja resumen
+            productosCriticosTop: productosCriticosTexto
         };
     });
 }
@@ -2582,7 +2696,8 @@ function crearHojaResumen(resumen) {
         'Total Disponible',
         'Demanda No Satisfecha',
         'Cobertura Promedio (%)',
-        'Tipos de Servicio'
+        'Tipos de Servicio',
+        'Productos Críticos (Top 5)'
     ];
     
     const datosResumen = resumen.map(item => [
@@ -2593,7 +2708,8 @@ function crearHojaResumen(resumen) {
         item.totalDisponible,
         item.totalDemandaNoSatisfecha,
         item.coberturaPromedio,
-        item.tiposServicio
+        item.tiposServicio,
+        item.productosCriticosTop || 'Ninguno'
     ]);
     
     const ws = XLSX.utils.aoa_to_sheet([encabezados, ...datosResumen]);
@@ -2607,41 +2723,21 @@ function crearHojaResumen(resumen) {
         { wch: 18 },  // Total Disponible
         { wch: 22 },  // Demanda No Satisfecha
         { wch: 20 },  // Cobertura Promedio (%)
-        { wch: 18 }   // Tipos de Servicio
+        { wch: 18 },  // Tipos de Servicio
+        { wch: 50 }   // Productos Críticos
     ];
     
-    return ws;
-}
-
-// Crear hoja de productos críticos
-function crearHojaProductosCriticos(resumen) {
-    const encabezados = ['Centro', 'Producto', 'Demanda No Satisfecha'];
-    const datosProductos = [];
-    
-    resumen.forEach(item => {
-        if (item.productosCriticosTop && item.productosCriticosTop.length > 0) {
-            item.productosCriticosTop.forEach(producto => {
-                datosProductos.push([
-                    item.centro,
-                    producto.producto,
-                    producto.demanda
-                ]);
-            });
-        }
-    });
-    
-    // Si no hay productos críticos, agregar mensaje
-    if (datosProductos.length === 0) {
-        datosProductos.push(['Sin datos', 'No hay productos críticos registrados', 0]);
-    }
-    
-    const ws = XLSX.utils.aoa_to_sheet([encabezados, ...datosProductos]);
-    
-    // Ajustar ancho de columnas
+    // Ajustar ancho de columnas para mejor visualización
     ws['!cols'] = [
         { wch: 30 },  // Centro
-        { wch: 60 },  // Producto
-        { wch: 25 }   // Demanda No Satisfecha
+        { wch: 15 },  // Total Registros
+        { wch: 18 },  // Productos Únicos
+        { wch: 18 },  // Total Requerida
+        { wch: 18 },  // Total Disponible
+        { wch: 22 },  // Demanda No Satisfecha
+        { wch: 20 },  // Cobertura Promedio (%)
+        { wch: 18 },  // Tipos de Servicio
+        { wch: 50 }   // Productos Críticos
     ];
     
     return ws;
@@ -3028,7 +3124,7 @@ function cerrarModalResetConfirm() {
 }
 
 // Confirmar reseteo con contraseña
-function confirmarReseteo(event) {
+async function confirmarReseteo(event) {
     event.preventDefault();
     
     const passwordInput = document.getElementById('resetPassword');
@@ -3046,22 +3142,51 @@ function confirmarReseteo(event) {
         return;
     }
     
-    // Verificar contraseña
-    if (usuarioActual.contraseña !== contraseña) {
+    // Verificar contraseña (haciendo hash de la contraseña ingresada)
+    const contraseñaHash = auth.hashearContraseña(contraseña);
+    const contraseñaAlmacenada = usuarioActual.contraseña;
+    
+    console.log('🔐 Verificación de contraseña para reseteo:');
+    console.log('  Contraseña hash ingresada:', contraseñaHash);
+    console.log('  Contraseña almacenada:', contraseñaAlmacenada);
+    console.log('  ¿Coinciden?:', contraseñaHash === contraseñaAlmacenada);
+    
+    if (contraseñaAlmacenada !== contraseñaHash) {
         if (errorDiv) {
             errorDiv.textContent = '❌ Contraseña incorrecta';
             errorDiv.classList.remove('error-hidden');
         }
         if (passwordInput) passwordInput.value = '';
+        console.error('❌ Error: Contraseña incorrecta para reseteo');
         return;
     }
     
     // Contraseña correcta, proceder con reset
     if (errorDiv) errorDiv.classList.add('error-hidden');
     
+    console.log('✓ Contraseña validada. Procediendo con reseteo...');
+    
+    // Primero limpiar Google Sheets, luego el sistema local
+    try {
+        console.log('📤 Enviando solicitud de limpieza a Google Sheets...');
+        const urlLimpiar = APPS_SCRIPT_URL + '?action=deleteAllRecetas';
+        const respuesta = await fetch(urlLimpiar, {
+            method: 'GET',
+            mode: 'no-cors'
+        });
+        
+        console.log('✓ Solicitud GET enviada a Google Sheets');
+        
+        // Esperar un poco para asegurar que se procesó
+        await new Promise(resolve => setTimeout(resolve, 1500));
+    } catch (error) {
+        console.warn('⚠️ Error enviando solicitud, pero continuando con reseteo local:', error);
+    }
+    
+    // Ahora limpiar el sistema local
     auth.resetearSistema();
     cerrarModalResetConfirm();
-    alert('✓ Sistema reseteado. La página se recargará.');
+    alert('✓ Sistema reseteado completamente. La página se recargará.');
     location.reload();
 }
 
@@ -3087,30 +3212,28 @@ function mostrarAplicacion() {
     // Aplicar permisos y deshabilitar campos para usuarios de centro
     aplicarPermisosEstablecimientos();
     
-    // Mostrar/ocultar botón de admin y secciones solo para administradores
-    const esAdmin = auth.esAdmin && auth.esAdmin();
+    // Mostrar/ocultar botón de admin
     const btnAdmin = DOMCache.get('btnAdmin');
-    const btnExportarResumen = document.getElementById('btnExportarResumen');
-    const statsSection = document.querySelector('.stats-section');
-    const criticalSection = document.querySelector('.critical-section');
-
     if (btnAdmin) {
-        if (esAdmin) {
+        if (auth.esAdmin()) {
             btnAdmin.classList.remove('btn-hidden');
         } else {
             btnAdmin.classList.add('btn-hidden');
         }
     }
-
-    // Secciones solo admin: resumen general, exportar resumen y productos críticos
-    [btnExportarResumen, statsSection, criticalSection].forEach(el => {
-        if (!el) return;
-        if (esAdmin) {
-            el.classList.remove('solo-admin-hidden');
+    
+    // Mostrar/ocultar secciones solo para administrador
+    const statsSection = DOMCache.get('stats-section-admin');
+    const criticalSection = DOMCache.get('critical-section-admin');
+    if (statsSection || criticalSection) {
+        if (auth.esAdmin()) {
+            if (statsSection) statsSection.style.display = 'block';
+            if (criticalSection) criticalSection.style.display = 'block';
         } else {
-            el.classList.add('solo-admin-hidden');
+            if (statsSection) statsSection.style.display = 'none';
+            if (criticalSection) criticalSection.style.display = 'none';
         }
-    });
+    }
     
     // Event listeners
     const btnLogout = DOMCache.get('btnLogout');

@@ -31,6 +31,8 @@ function doGet(e) {
         // Devolver TODAS las recetas sin filtrar
         // El filtrado se hace en JavaScript
         return obtenerRecetas();
+      case 'deleteAllRecetas':
+        return limpiarTodasLasRecetas();
       default:
         return respuestaJSON({
           status: 'error',
@@ -434,38 +436,56 @@ function eliminarReceta(id) {
 function limpiarTodasLasRecetas() {
   try {
     const ss = SpreadsheetApp.openById(SHEET_ID);
-    let sheet = ss.getSheetByName(SHEET_RECETAS);
     
+    // Intentar con SHEET_RECETAS primero
+    let sheet = ss.getSheetByName(SHEET_RECETAS);
+    let nombreHoja = SHEET_RECETAS;
+    
+    // Si no existe, intentar con SHEET_ENTRADAS
     if (!sheet) {
       sheet = ss.getSheetByName(SHEET_ENTRADAS);
+      nombreHoja = SHEET_ENTRADAS;
     }
     
     if (!sheet) {
+      const mensaje = 'Hoja de recetas no encontrada. Se buscó: ' + SHEET_RECETAS + ' y ' + SHEET_ENTRADAS;
+      console.error(mensaje);
       return respuestaJSON({
         success: false,
-        error: 'Hoja de recetas no encontrada'
+        error: mensaje
       });
     }
     
-    // Obtener datos actuales
-    const data = sheet.getDataRange().getValues();
+    console.log('Limpiando hoja: ' + nombreHoja);
     
-    // Conservar encabezado, eliminar todo lo demás
+    // Obtener el rango de datos
+    const dataRange = sheet.getDataRange();
+    const data = dataRange.getValues();
+    
+    console.log('Filas totales: ' + data.length);
+    
+    // Si hay datos, borrar todo excepto el encabezado (fila 1)
     if (data.length > 1) {
-      sheet.deleteRows(2, data.length - 1);
+      const filasPorBorrar = data.length - 1; // Excluye encabezado
+      console.log('Borrando ' + filasPorBorrar + ' filas...');
+      sheet.deleteRows(2, filasPorBorrar);
     }
     
-    console.log('✓ Todas las recetas eliminadas');
+    console.log('✓ Todas las recetas de la hoja ' + nombreHoja + ' han sido eliminadas');
     
     return respuestaJSON({
       success: true,
-      message: 'Todas las recetas han sido eliminadas'
+      status: 'ok',
+      message: 'Todas las recetas han sido eliminadas de ' + nombreHoja,
+      hoja: nombreHoja,
+      filasEliminadas: data.length - 1
     });
     
   } catch (error) {
-    console.error('Error en limpiarTodasLasRecetas:', error);
+    console.error('Error en limpiarTodasLasRecetas:', error.toString());
     return respuestaJSON({
       success: false,
+      status: 'error',
       error: error.toString()
     });
   }

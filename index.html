@@ -24,7 +24,7 @@
     <div id="loginScreen" class="login-screen">
         <div class="login-container">
             <div class="login-card">
-                <h1>� Sistema de Salud</h1>
+                <h1>🔐 Acceso al Sistema</h1>
                 <p class="login-subtitle">Registro de Recetas No Atendidas</p>
                 
                 <form id="loginForm" class="login-form">
@@ -197,10 +197,10 @@
             </section>
 
             <!-- Estadísticas -->
-            <section class="stats-section">
-                <div class="section-header">
-                    <h2>Resumen General</h2>
-                    <button id="btnExportarResumen" class="btn btn-secondary">📊 Descargar Resumen Excel</button>
+            <section class="stats-section" id="stats-section-admin">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+                    <h2 style="margin: 0;">Resumen General</h2>
+                    <button id="btnDescargarResumenExcel" class="btn btn-secondary" title="Descargar resumen en Excel">📊 Descargar Resumen Excel</button>
                 </div>
                 <div class="stats-grid">
                     <div class="stat-card">
@@ -223,7 +223,7 @@
             </section>
 
             <!-- Productos Críticos -->
-            <section class="critical-section">
+            <section class="critical-section" id="critical-section-admin">
                 <h2>⚠️ Productos Críticos (Demanda No Satisfecha)</h2>
                 <div id="productosCriticos" class="critical-list">
                     <p class="empty-state">Sin productos con demanda no satisfecha.</p>

@@ -19,6 +19,19 @@ class AutenticacionSistema {
         if (sesion) {
             try {
                 this.usuarioActual = JSON.parse(sesion);
+                
+                // Validar que la sesión tenga contraseña (para sesiones antiguas)
+                if (this.usuarioActual && !this.usuarioActual.contraseña) {
+                    console.warn('⚠️ Sesión sin contraseña detectada. Buscando en BD de usuarios...');
+                    // Buscar el usuario en la BD para obtener su contraseña
+                    const usuarios = this.obtenerTodosLosUsuarios();
+                    const usuarioEnBD = usuarios.find(u => u.usuario === this.usuarioActual.usuario);
+                    if (usuarioEnBD && usuarioEnBD.contraseña) {
+                        this.usuarioActual.contraseña = usuarioEnBD.contraseña;
+                        localStorage.setItem(SESSION_KEY, JSON.stringify(this.usuarioActual));
+                        console.log('✓ Sesión actualizada con contraseña');
+                    }
+                }
             } catch (e) {
                 console.error('Error al cargar sesión:', e);
                 this.logout();
@@ -203,6 +216,7 @@ class AutenticacionSistema {
             usuario: usuarioEncontrado.usuario,
             rol: usuarioEncontrado.rol,
             centro: usuarioEncontrado.centro,
+            contraseña: usuarioEncontrado.contraseña,
             login_en: new Date().toISOString()
         };
 
@@ -345,11 +359,34 @@ class AutenticacionSistema {
     
     // Función para resetear todo (útil para debugging)
     resetearSistema() {
+        // 1. Limpiar almacenamiento local
         localStorage.removeItem(AUTH_STORAGE_KEY);
         localStorage.removeItem(SESSION_KEY);
+        
+        // 2. Limpiar storage de recetas
+        localStorage.removeItem('recetas_no_atendidas');
+        localStorage.removeItem('recetas_cola_sync');
+        
+        // 3. Limpiar usuario actual
         this.usuarioActual = null;
+        
+        // 4. Reinicializar admin por defecto
         this.inicializarAdmin();
-        console.log('✓ Sistema reseteado');
+        
+        // 5. Limpiar también en Google Sheets
+        console.log('🔄 Reseteando sistema...');
+        const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbyfRvelg1LV7vUynZbS9mrU6SlePSjgJ2mIBcgQJ0xWaDbMlvN_VUJEJjD9Sny0qXbv/exec';
+        
+        fetch(APPS_SCRIPT_URL + '?action=deleteAllRecetas', {
+            method: 'GET',
+            mode: 'no-cors'
+        }).then(() => {
+            console.log('✅ Solicitud de limpieza enviada a Google Sheets');
+        }).catch(e => {
+            console.warn('⚠️ No se pudo enviar solicitud de limpieza:', e);
+        });
+        
+        console.log('✓ Sistema reseteado completamente');
     }
 }
 
