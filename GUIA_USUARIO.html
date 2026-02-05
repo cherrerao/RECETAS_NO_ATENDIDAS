@@ -1,0 +1,317 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Guía - Usuario de Centro</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+        
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 12px;
+            padding: 40px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+        }
+        
+        h1 {
+            color: #667eea;
+            margin-bottom: 30px;
+            text-align: center;
+            font-size: 2.2em;
+        }
+        
+        .step {
+            display: flex;
+            margin-bottom: 25px;
+            gap: 20px;
+        }
+        
+        .step-number {
+            flex-shrink: 0;
+            width: 50px;
+            height: 50px;
+            background: #667eea;
+            color: white;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            font-size: 1.5em;
+        }
+        
+        .step-content {
+            flex: 1;
+        }
+        
+        .step-title {
+            font-weight: 600;
+            color: #333;
+            font-size: 1.1em;
+            margin-bottom: 8px;
+        }
+        
+        .step-description {
+            color: #666;
+            line-height: 1.6;
+        }
+        
+        .code-block {
+            background: #f5f5f5;
+            border-left: 4px solid #667eea;
+            padding: 12px 15px;
+            margin: 10px 0;
+            border-radius: 4px;
+            font-family: 'Courier New', monospace;
+            font-size: 0.95em;
+        }
+        
+        .check {
+            color: #28a745;
+            font-weight: bold;
+            margin-right: 8px;
+        }
+        
+        .button-text {
+            background: #e7f3ff;
+            padding: 2px 8px;
+            border-radius: 4px;
+            color: #0066cc;
+            font-weight: 600;
+        }
+        
+        .warning {
+            background: #fff3cd;
+            border-left: 4px solid #ffc107;
+            padding: 15px;
+            margin: 20px 0;
+            border-radius: 4px;
+            color: #856404;
+        }
+        
+        .success {
+            background: #d4edda;
+            border-left: 4px solid #28a745;
+            padding: 15px;
+            margin: 20px 0;
+            border-radius: 4px;
+            color: #155724;
+        }
+        
+        .divider {
+            height: 2px;
+            background: linear-gradient(90deg, transparent, #ddd, transparent);
+            margin: 30px 0;
+        }
+        
+        .comparison {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+            margin: 20px 0;
+        }
+        
+        .comparison-box {
+            padding: 15px;
+            border-radius: 8px;
+            border: 2px solid #e0e0e0;
+        }
+        
+        .comparison-box h3 {
+            color: #333;
+            margin-bottom: 10px;
+            font-size: 1.1em;
+        }
+        
+        .comparison-box.admin {
+            background: #f0f4ff;
+            border-color: #667eea;
+        }
+        
+        .comparison-box.user {
+            background: #f0fff4;
+            border-color: #28a745;
+        }
+        
+        .comparison-box ul {
+            list-style: none;
+            font-size: 0.95em;
+            color: #555;
+            line-height: 1.8;
+        }
+        
+        .comparison-box li:before {
+            content: "✓ ";
+            color: #667eea;
+            font-weight: bold;
+        }
+        
+        .comparison-box.user li:before {
+            color: #28a745;
+        }
+        
+        @media (max-width: 600px) {
+            .container {
+                padding: 20px;
+            }
+            
+            .comparison {
+                grid-template-columns: 1fr;
+            }
+            
+            h1 {
+                font-size: 1.8em;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>👥 Crear Usuario de Centro</h1>
+        
+        <div class="step">
+            <div class="step-number">1️⃣</div>
+            <div class="step-content">
+                <div class="step-title">Ingresa como Administrador</div>
+                <div class="step-description">
+                    Abre la página de login y completa:
+                </div>
+                <div class="code-block">
+                    Usuario: <strong>admin</strong><br>
+                    Contraseña: <strong>admin123</strong>
+                </div>
+                <div class="step-description">
+                    Haz clic en el botón <span class="button-text">INGRESAR</span>
+                </div>
+            </div>
+        </div>
+        
+        <div class="step">
+            <div class="step-number">2️⃣</div>
+            <div class="step-content">
+                <div class="step-title">Abre Gestión de Usuarios</div>
+                <div class="step-description">
+                    Una vez dentro, verás un botón en la esquina superior derecha:
+                    <br><span class="button-text">⚙️ Gestión de Usuarios</span>
+                    <br>Haz clic en él
+                </div>
+            </div>
+        </div>
+        
+        <div class="step">
+            <div class="step-number">3️⃣</div>
+            <div class="step-content">
+                <div class="step-title">Crea un Usuario de Centro</div>
+                <div class="step-description">
+                    Completa el formulario "Crear Usuario":
+                </div>
+                <div class="code-block">
+                    <strong>Nombre de Usuario:</strong> bellavista<br>
+                    <strong>Contraseña:</strong> clave123<br>
+                    <strong>Rol:</strong> Usuario (Centro)<br>
+                    <strong>Centro:</strong> Centro de Salud Bellavista
+                </div>
+                <div class="step-description">
+                    Haz clic en <span class="button-text">Crear Usuario</span>
+                    <br><strong>Verás:</strong> ✓ Usuario "bellavista" creado exitosamente
+                </div>
+            </div>
+        </div>
+        
+        <div class="step">
+            <div class="step-number">4️⃣</div>
+            <div class="step-content">
+                <div class="step-title">Cierra Sesión</div>
+                <div class="step-description">
+                    Haz clic en el botón <span class="button-text">Salir</span> (arriba a la derecha)
+                    <br>Confirma que deseas cerrar sesión
+                </div>
+            </div>
+        </div>
+        
+        <div class="step">
+            <div class="step-number">5️⃣</div>
+            <div class="step-content">
+                <div class="step-title">Ingresa con Usuario del Centro</div>
+                <div class="step-description">
+                    En la pantalla de login, completa:
+                </div>
+                <div class="code-block">
+                    Usuario: <strong>bellavista</strong><br>
+                    Contraseña: <strong>clave123</strong>
+                </div>
+                <div class="step-description">
+                    Haz clic en <span class="button-text">INGRESAR</span>
+                </div>
+            </div>
+        </div>
+        
+        <div class="divider"></div>
+        
+        <h2 style="color: #667eea; margin: 30px 0 20px 0; font-size: 1.5em;">✓ Verificar Restricciones</h2>
+        
+        <div class="success">
+            <strong>Una vez dentro como usuario de centro, deberías ver:</strong>
+            <ul style="margin-top: 10px; margin-left: 20px;">
+                <li>Tu nombre: bellavista</li>
+                <li>Tu rol: 🏥 Usuario de Centro</li>
+                <li>Tu centro: Centro de Salud Bellavista</li>
+                <li>Campo "Red": DESHABILITADO (gris)</li>
+                <li>Campo "Establecimiento": SOLO tu centro</li>
+                <li>NO ves botón: ⚙️ Gestión de Usuarios</li>
+                <li>SOLO ves registros de tu centro</li>
+            </ul>
+        </div>
+        
+        <h2 style="color: #667eea; margin: 30px 0 20px 0; font-size: 1.5em;">📊 Comparación: Admin vs Usuario</h2>
+        
+        <div class="comparison">
+            <div class="comparison-box admin">
+                <h3>👨‍💼 Administrador</h3>
+                <ul>
+                    <li>Ve TODOS los centros</li>
+                    <li>Crea/elimina usuarios</li>
+                    <li>Datos de todos los establecimientos</li>
+                    <li>Estadísticas globales</li>
+                    <li>Puede cambiar de Red</li>
+                    <li>Acceso completo</li>
+                </ul>
+            </div>
+            
+            <div class="comparison-box user">
+                <h3>🏥 Usuario de Centro</h3>
+                <ul>
+                    <li>Ve SOLO su centro</li>
+                    <li>NO puede crear usuarios</li>
+                    <li>Datos solo de su centro</li>
+                    <li>Estadísticas de su centro</li>
+                    <li>Red deshabilitada</li>
+                    <li>Acceso limitado</li>
+                </ul>
+            </div>
+        </div>
+        
+        <div class="warning">
+            <strong>⚠️ Nota Importante:</strong> Solo se puede crear UN usuario por centro. Si intentas crear otro usuario para el mismo centro, aparecerá un error.
+        </div>
+        
+        <div class="success">
+            <strong>🎉 ¡Listo!</strong> Ya tienes un sistema de usuarios con roles y restricciones funcionando. Admin ve todo, usuarios de centro ven solo su información.
+        </div>
+    </div>
+</body>
+</html>

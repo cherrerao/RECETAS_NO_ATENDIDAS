@@ -1,0 +1,678 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Diagrama de Base de Datos y Flujo de Datos</title>
+    <script>
+        var config = {
+            startOnLoad: true,
+            theme: 'default',
+            securityLevel: 'loose',
+            logLevel: 'debug'
+        };
+        if(window.mermaid){
+            window.mermaid.initialize(config);
+        }
+    </script>
+    <script src="https://cdn.jsdelivr.net/npm/mermaid@10.0.0/dist/mermaid.min.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+        
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            overflow: hidden;
+        }
+        
+        header {
+            background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
+            color: white;
+            padding: 30px;
+            text-align: center;
+        }
+        
+        header h1 {
+            font-size: 2.5em;
+            margin-bottom: 10px;
+        }
+        
+        header p {
+            font-size: 1.1em;
+            opacity: 0.9;
+        }
+        
+        .content {
+            padding: 30px;
+        }
+        
+        .diagram-section {
+            margin: 30px 0;
+            padding: 20px;
+            background: #f8f9fa;
+            border-radius: 8px;
+            border-left: 4px solid #2a5298;
+        }
+        
+        .diagram-section h2 {
+            color: #1e3c72;
+            margin-bottom: 20px;
+            font-size: 1.5em;
+        }
+        
+        .mermaid {
+            display: flex;
+            justify-content: center;
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            overflow-x: auto;
+        }
+        
+        .data-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 15px 0;
+            background: white;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+        
+        .data-table thead {
+            background: #1e3c72;
+            color: white;
+        }
+        
+        .data-table th,
+        .data-table td {
+            padding: 12px;
+            text-align: left;
+            border-bottom: 1px solid #ddd;
+        }
+        
+        .data-table tbody tr:hover {
+            background: #f5f5f5;
+        }
+        
+        .data-table tbody tr:nth-child(odd) {
+            background: #f9f9f9;
+        }
+        
+        .field-type {
+            font-family: 'Courier New', monospace;
+            background: #f0f0f0;
+            padding: 2px 6px;
+            border-radius: 3px;
+            font-size: 0.9em;
+        }
+        
+        .required {
+            color: #d32f2f;
+            font-weight: bold;
+        }
+        
+        .optional {
+            color: #1976d2;
+        }
+        
+        .info-box {
+            background: #e3f2fd;
+            border-left: 4px solid #1976d2;
+            padding: 15px;
+            margin: 15px 0;
+            border-radius: 4px;
+        }
+        
+        .info-box h4 {
+            color: #1565c0;
+            margin-bottom: 8px;
+        }
+        
+        .code-block {
+            background: #f5f5f5;
+            border: 1px solid #ddd;
+            padding: 15px;
+            border-radius: 4px;
+            overflow-x: auto;
+            font-family: 'Courier New', monospace;
+            font-size: 0.9em;
+            margin: 15px 0;
+        }
+        
+        footer {
+            background: #f8f9fa;
+            padding: 20px;
+            text-align: center;
+            color: #666;
+            border-top: 1px solid #ddd;
+        }
+        
+        .tabs {
+            display: flex;
+            gap: 10px;
+            margin: 20px 0;
+            flex-wrap: wrap;
+        }
+        
+        .tab-button {
+            padding: 10px 20px;
+            background: #f0f0f0;
+            border: 2px solid #ddd;
+            border-radius: 4px;
+            cursor: pointer;
+            font-weight: 500;
+            transition: all 0.3s;
+        }
+        
+        .tab-button:hover {
+            background: #e0e0e0;
+            border-color: #1976d2;
+        }
+        
+        .tab-button.active {
+            background: #1976d2;
+            color: white;
+            border-color: #1565c0;
+        }
+        
+        .tab-content {
+            display: none;
+        }
+        
+        .tab-content.active {
+            display: block;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>📊 Base de Datos y Flujo de Datos</h1>
+            <p>Estructura de Sheets y Movimiento de Información</p>
+        </header>
+        
+        <div class="content">
+            <!-- DIAGRAMA 1: ESTRUCTURA DE GOOGLE SHEETS -->
+            <div class="diagram-section">
+                <h2>1️⃣ Estructura de Google Sheets</h2>
+                <div class="mermaid">
+                    graph TB
+                        subgraph GS["Google Sheets ID:<br/>1wXQjHUAHEnfTde4xWJujv9xMQOmbGgzaI_27rRnUOQM"]
+                            USUARIOS["📋 Hoja: USUARIOS<br/>Credenciales y Roles"]
+                            RECETAS["📋 Hoja: RECETAS<br/>Todos los registros"]
+                            ENTRADAS["📋 Hoja: ENTRADAS<br/>Registros procesados"]
+                        end
+                        
+                        style GS fill:#fff9c4
+                        style USUARIOS fill:#bbdefb
+                        style RECETAS fill:#c8e6c9
+                        style ENTRADAS fill:#f8bbd0
+                </div>
+                
+                <div class="info-box">
+                    <h4>ℹ️ Importante</h4>
+                    <p>Las hojas <strong>RECETAS</strong> y <strong>ENTRADAS</strong> sirven para el mismo propósito (compatibilidad). El sistema escribe en ambas. La hoja <strong>USUARIOS</strong> almacena las credenciales para la autenticación.</p>
+                </div>
+            </div>
+            
+            <!-- USUARIOS SHEET -->
+            <div class="diagram-section">
+                <h2>2️⃣ Hoja: USUARIOS</h2>
+                <p style="margin-bottom: 15px; color: #555;">Almacena credenciales y roles de acceso al sistema</p>
+                
+                <table class="data-table">
+                    <thead>
+                        <tr>
+                            <th>Campo</th>
+                            <th>Tipo</th>
+                            <th>Descripción</th>
+                            <th>Ejemplo</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td><strong>usuario</strong> <span class="required">*</span></td>
+                            <td><span class="field-type">String</span></td>
+                            <td>Nombre único de usuario para login</td>
+                            <td>bellavista</td>
+                        </tr>
+                        <tr>
+                            <td><strong>contraseña</strong> <span class="required">*</span></td>
+                            <td><span class="field-type">String</span></td>
+                            <td>Contraseña encriptada o en texto</td>
+                            <td>pass123</td>
+                        </tr>
+                        <tr>
+                            <td><strong>rol</strong> <span class="required">*</span></td>
+                            <td><span class="field-type">String</span></td>
+                            <td>Tipo de acceso: "admin" o "usuario"</td>
+                            <td>usuario</td>
+                        </tr>
+                        <tr>
+                            <td><strong>centro</strong> <span class="optional">⚠️</span></td>
+                            <td><span class="field-type">String</span></td>
+                            <td>Centro asignado (solo para usuarios, no admin)</td>
+                            <td>Centro de Salud Bellavista</td>
+                        </tr>
+                        <tr>
+                            <td><strong>activo</strong> <span class="optional">⚠️</span></td>
+                            <td><span class="field-type">Boolean</span></td>
+                            <td>Si el usuario está habilitado</td>
+                            <td>TRUE</td>
+                        </tr>
+                        <tr>
+                            <td><strong>fecha_creacion</strong> <span class="optional">⚠️</span></td>
+                            <td><span class="field-type">DateTime</span></td>
+                            <td>Cuándo se creó el usuario</td>
+                            <td>2025-01-15T14:30:00</td>
+                        </tr>
+                    </tbody>
+                </table>
+                
+                <div class="info-box">
+                    <h4>📝 Ejemplo de datos en USUARIOS</h4>
+                    <div class="code-block">
+usuario              | contraseña | rol     | centro                        | activo
+admin                | admin123   | admin   | (vacío)                       | TRUE
+bellavista           | pass123    | usuario | Centro de Salud Bellavista    | TRUE
+carmen               | pass456    | usuario | Centro de Salud Carmen Legua  | TRUE
+callao               | pass789    | usuario | Centro de Salud Callao        | TRUE
+                    </div>
+                </div>
+            </div>
+            
+            <!-- RECETAS SHEET -->
+            <div class="diagram-section">
+                <h2>3️⃣ Hoja: RECETAS (o ENTRADAS)</h2>
+                <p style="margin-bottom: 15px; color: #555;">Almacena todos los registros de recetas no atendidas</p>
+                
+                <table class="data-table">
+                    <thead>
+                        <tr>
+                            <th>Campo</th>
+                            <th>Tipo</th>
+                            <th>Descripción</th>
+                            <th>Ejemplo</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td><strong>cod_pre</strong> <span class="required">*</span></td>
+                            <td><span class="field-type">String</span></td>
+                            <td>Código del establecimiento (5 dígitos formateados)</td>
+                            <td>00001</td>
+                        </tr>
+                        <tr>
+                            <td><strong>establecimiento</strong> <span class="required">*</span></td>
+                            <td><span class="field-type">String</span></td>
+                            <td>Nombre del establecimiento de salud</td>
+                            <td>Centro de Salud Bellavista</td>
+                        </tr>
+                        <tr>
+                            <td><strong>codigo_producto</strong> <span class="required">*</span></td>
+                            <td><span class="field-type">String</span></td>
+                            <td>Código del medicamento (5 dígitos)</td>
+                            <td>00091</td>
+                        </tr>
+                        <tr>
+                            <td><strong>producto</strong> <span class="required">*</span></td>
+                            <td><span class="field-type">String</span></td>
+                            <td>Nombre del medicamento</td>
+                            <td>ACIDO ACETILSALICILICO</td>
+                        </tr>
+                        <tr>
+                            <td><strong>cantidad</strong> <span class="required">*</span></td>
+                            <td><span class="field-type">Number</span></td>
+                            <td>Unidades no atendidas</td>
+                            <td>50</td>
+                        </tr>
+                        <tr>
+                            <td><strong>unidad_medida</strong> <span class="required">*</span></td>
+                            <td><span class="field-type">String</span></td>
+                            <td>Unidad (tabletas, ampollas, etc)</td>
+                            <td>tabletas</td>
+                        </tr>
+                        <tr>
+                            <td><strong>motivo</strong> <span class="required">*</span></td>
+                            <td><span class="field-type">String</span></td>
+                            <td>Razón por la que no se atendió</td>
+                            <td>No disponible en almacén</td>
+                        </tr>
+                        <tr>
+                            <td><strong>tipo_servicio</strong> <span class="optional">⚠️</span></td>
+                            <td><span class="field-type">String</span></td>
+                            <td>Tipo de servicio que solicitó</td>
+                            <td>Atención ambulatoria</td>
+                        </tr>
+                        <tr>
+                            <td><strong>fecha_receta</strong> <span class="optional">⚠️</span></td>
+                            <td><span class="field-type">Date</span></td>
+                            <td>Cuándo se solicitó la receta</td>
+                            <td>2025-01-15</td>
+                        </tr>
+                        <tr>
+                            <td><strong>observaciones</strong> <span class="optional">⚠️</span></td>
+                            <td><span class="field-type">String</span></td>
+                            <td>Notas adicionales</td>
+                            <td>Paciente remitido a farmacia privada</td>
+                        </tr>
+                        <tr>
+                            <td><strong>fecha_registro</strong> <span class="optional">⚠️</span></td>
+                            <td><span class="field-type">DateTime</span></td>
+                            <td>Cuándo se registró en el sistema</td>
+                            <td>2025-01-15T14:30:25</td>
+                        </tr>
+                        <tr>
+                            <td><strong>usuario_registro</strong> <span class="optional">⚠️</span></td>
+                            <td><span class="field-type">String</span></td>
+                            <td>Quién registró el dato</td>
+                            <td>bellavista</td>
+                        </tr>
+                    </tbody>
+                </table>
+                
+                <div class="info-box">
+                    <h4>📝 Formato de COD PRE y Código Producto</h4>
+                    <p>Los códigos se formatean automáticamente a <strong>5 dígitos</strong> con ceros a la izquierda:</p>
+                    <div class="code-block">
+Entrada: 1 → COD PRE: 00001
+Entrada: 123 → COD PRE: 00123
+Entrada: 91 → CODIGO PRODUCTO: 00091
+Entrada: 2 → CODIGO PRODUCTO: 00002
+                    </div>
+                </div>
+            </div>
+            
+            <!-- FLUJO DE DATOS -->
+            <div class="diagram-section">
+                <h2>4️⃣ Flujo de Datos (Escritura y Lectura)</h2>
+                <div class="mermaid">
+                    graph LR
+                        A["🖥️ Frontend<br/>JavaScript<br/>script.js"] 
+                        B["☁️ Google Apps Script<br/>Apps_Script_Completo.gs"]
+                        C["📊 Google Sheets"]
+                        
+                        A -->|POST JSON<br/>guardarReceta| B
+                        A -->|GET<br/>cargarRecetas| B
+                        A -->|GET<br/>getUsers| B
+                        
+                        B -->|Lee de<br/>USUARIOS| C
+                        B -->|Lee de<br/>RECETAS/ENTRADAS| C
+                        B -->|Escribe en<br/>RECETAS/ENTRADAS| C
+                        
+                        C -->|Retorna JSON| B
+                        B -->|Retorna JSON| A
+                        
+                        A -->|Procesa<br/>Filtra por Centro| A
+                        A -->|Renderiza<br/>en Tabla| A
+                        
+                        style A fill:#bbdefb
+                        style B fill:#fff9c4
+                        style C fill:#c8e6c9
+                </div>
+            </div>
+            
+            <!-- FUNCIONES GOOGLE APPS SCRIPT -->
+            <div class="diagram-section">
+                <h2>5️⃣ Funciones Principales en Google Apps Script</h2>
+                
+                <div class="tabs">
+                    <button class="tab-button active" onclick="mostrarTab(event, 'doGet')">doGet</button>
+                    <button class="tab-button" onclick="mostrarTab(event, 'doPost')">doPost</button>
+                    <button class="tab-button" onclick="mostrarTab(event, 'usuarios')">getUsers</button>
+                    <button class="tab-button" onclick="mostrarTab(event, 'recetas')">getRecetas</button>
+                </div>
+                
+                <!-- TAB: doGet -->
+                <div id="doGet" class="tab-content active">
+                    <h4>GET Handler - Obtener Datos</h4>
+                    <p style="margin-bottom: 15px;">Maneja las solicitudes GET para recuperar información</p>
+                    <div class="code-block">
+Parámetros: 
+  - action=getUsers → Obtiene lista de usuarios
+  - action=getRecetas → Obtiene todas las recetas
+  - action=cargarCentros → Obtiene lista de centros
+
+Respuesta:
+  {
+    "status": "success",
+    "data": [ {...}, {...} ]
+  }
+                    </div>
+                </div>
+                
+                <!-- TAB: doPost -->
+                <div id="doPost" class="tab-content">
+                    <h4>POST Handler - Guardar Datos</h4>
+                    <p style="margin-bottom: 15px;">Maneja las solicitudes POST para crear/actualizar registros</p>
+                    <div class="code-block">
+Acciones soportadas:
+  - createUser → Crear nuevo usuario
+  - saveReceta → Guardar receta no atendida
+  - login → Validar credenciales
+
+Recibe JSON con los datos, 
+Valida, 
+Inserta en Sheets,
+Retorna: { "status": "success", "message": "..." }
+                    </div>
+                </div>
+                
+                <!-- TAB: getUsers -->
+                <div id="usuarios" class="tab-content">
+                    <h4>Función: getUsers</h4>
+                    <p style="margin-bottom: 15px;">Retorna lista de todos los usuarios del sistema</p>
+                    <div class="code-block">
+function obtenerUsuarios() {
+  const sheet = getSheet(SHEET_USUARIOS);
+  const datos = sheet.getDataRange().getValues();
+  
+  // Convierte a objetos JSON
+  const usuarios = datos.map(fila => ({
+    usuario: fila[0],
+    rol: fila[2],
+    centro: fila[3],
+    activo: fila[4]
+  }));
+  
+  return respuestaJSON({
+    status: 'success',
+    data: usuarios
+  });
+}
+
+Retorna:
+[
+  { usuario: "admin", rol: "admin", centro: null },
+  { usuario: "bellavista", rol: "usuario", centro: "..." },
+  ...
+]
+                    </div>
+                </div>
+                
+                <!-- TAB: getRecetas -->
+                <div id="recetas" class="tab-content">
+                    <h4>Función: getRecetas</h4>
+                    <p style="margin-bottom: 15px;">Retorna todos los registros de recetas</p>
+                    <div class="code-block">
+function obtenerRecetas() {
+  const sheet = getSheet(SHEET_RECETAS);
+  const datos = sheet.getDataRange().getValues();
+  
+  // Primera fila es encabezado, las demás son datos
+  const recetas = datos.slice(1).map(fila => ({
+    cod_pre: fila[0],
+    establecimiento: fila[1],
+    codigo_producto: fila[2],
+    producto: fila[3],
+    cantidad: fila[4],
+    ...
+  }));
+  
+  return respuestaJSON({
+    status: 'success',
+    data: recetas,
+    total: recetas.length
+  });
+}
+                    </div>
+                </div>
+            </div>
+            
+            <!-- FLUJO COMPLETO DE GUARDADO -->
+            <div class="diagram-section">
+                <h2>6️⃣ Flujo Completo: Guardar una Receta</h2>
+                <div class="mermaid">
+                    graph TD
+                        A["1. Usuario Frontend<br/>Llena formulario<br/>y hace click<br/>en 'Guardar'"] -->|2. Script.js<br/>Valida campos| B["3. Construye JSON<br/>con todos datos"]
+                        
+                        B -->|4. POST a URL<br/>Apps Script| C["5. Google Apps Script<br/>Recibe en doPost"]
+                        
+                        C -->|6. Validaciones<br/>- Centro existe?<br/>- Campos obligatorios?| D{Válido?}
+                        
+                        D -->|No| E["❌ Retorna error<br/>Frontend muestra<br/>mensaje error"]
+                        D -->|Sí| F["7. Formatea datos<br/>- COD PRE a 5 dígitos<br/>- Código Producto<br/>  a 5 dígitos"]
+                        
+                        F -->|8. Obtiene hoja<br/>ENTRADAS/RECETAS| G["9. Append nueva fila<br/>con todos los campos"]
+                        
+                        G -->|10. Retorna| H["JSON Success<br/>{status: success}"]
+                        
+                        H -->|11. Frontend recibe| I["✅ Muestra éxito<br/>Limpia formulario<br/>Recarga tabla"]
+                        
+                        E -->|Click reintentar| A
+                        I -->|User puede<br/>guardar otro| A
+                        
+                        style A fill:#fff9c4
+                        style I fill:#c8e6c9
+                        style E fill:#ffccbc
+                        style F fill:#ffe0b2
+                </div>
+            </div>
+            
+            <!-- FLUJO COMPLETO DE CARGA -->
+            <div class="diagram-section">
+                <h2>7️⃣ Flujo Completo: Cargar Recetas en Tabla</h2>
+                <div class="mermaid">
+                    graph TD
+                        A["1. Frontend carga<br/>o usuario hace<br/>click en Refrescar"] -->|2. GET a URL| B["3. Google Apps Script<br/>doGet action=getRecetas"]
+                        
+                        B -->|4. Lee Sheet| C["5. Obtiene hoja RECETAS<br/>Lee todas las filas"]
+                        
+                        C -->|6. Convierte a JSON| D["7. Retorna JSON Array<br/>con todos registros"]
+                        
+                        D -->|8. Frontend recibe| E["9. Script.js procesa<br/>datos en array"]
+                        
+                        E -->|10. ¿Quién es<br/>usuario?| F{Tipo}
+                        
+                        F -->|Admin| G["✅ Muestra TODOS<br/>los registros"]
+                        F -->|Centro| H["🔒 Filtra por Centro<br/>Solo su centro"]
+                        
+                        G -->|11. Genera filas HTML| I["12. Inserta en tabla<br/>con event listeners"]
+                        H -->|11. Genera filas HTML| I
+                        
+                        I -->|13. Usuario ve<br/>tabla actualizada| J["14. Puede filtrar,<br/>buscar, editar<br/>registros"]
+                        
+                        style G fill:#c8e6c9
+                        style H fill:#c8e6c9
+                        style J fill:#fff9c4
+                </div>
+            </div>
+            
+            <!-- SEGURIDAD Y RESTRICCIONES -->
+            <div class="diagram-section" style="background: #ffebee; border-left-color: #d32f2f;">
+                <h2 style="color: #d32f2f;">🔒 Seguridad y Restricciones de Acceso</h2>
+                
+                <table class="data-table">
+                    <thead>
+                        <tr>
+                            <th>Función</th>
+                            <th>Admin</th>
+                            <th>Usuario Centro</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td><strong>Crear Usuarios</strong></td>
+                            <td>✅ Sí (solo admin)</td>
+                            <td>❌ No</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Ver Gestión Usuarios</strong></td>
+                            <td>✅ Sí (botón visible)</td>
+                            <td>❌ No (botón oculto)</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Ver Todas Recetas</strong></td>
+                            <td>✅ Sí (todos centros)</td>
+                            <td>❌ No (filtrado en JS)</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Ver Recetas su Centro</strong></td>
+                            <td>✅ Sí</td>
+                            <td>✅ Sí</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Crear Receta</strong></td>
+                            <td>✅ Sí (cualquier centro)</td>
+                            <td>✅ Sí (solo su centro)</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Acceso a Apps Script</strong></td>
+                            <td>✅ Tiene editor</td>
+                            <td>❌ Sin acceso</td>
+                        </tr>
+                    </tbody>
+                </table>
+                
+                <div class="info-box" style="background: #fff9c4; border-left-color: #fbc02d;">
+                    <h4>⚠️ Nota sobre Seguridad</h4>
+                    <p>El filtrado por centro en usuarios se hace en el <strong>JavaScript frontend</strong>. Para mayor seguridad, deberías validar el centro en el <strong>backend (Apps Script)</strong> también.</p>
+                </div>
+            </div>
+        </div>
+        
+        <footer>
+            <p>📊 Diagrama de Base de Datos y Flujo de Datos | Recetas No Atendidas</p>
+            <p style="margin-top: 10px; font-size: 0.9em; color: #999;">Estructura de almacenamiento en Google Sheets y movimiento de datos en la aplicación</p>
+        </footer>
+    </div>
+    
+    <script>
+        if(window.mermaid) {
+            mermaid.contentLoaded();
+        }
+        
+        function mostrarTab(evt, tabName) {
+            // Ocultar todos los tabs
+            var i, tabcontent, tabbuttons;
+            tabcontent = document.getElementsByClassName("tab-content");
+            for (i = 0; i < tabcontent.length; i++) {
+                tabcontent[i].classList.remove("active");
+            }
+            
+            // Desactivar todos los botones
+            tabbuttons = document.getElementsByClassName("tab-button");
+            for (i = 0; i < tabbuttons.length; i++) {
+                tabbuttons[i].classList.remove("active");
+            }
+            
+            // Mostrar el tab actual
+            document.getElementById(tabName).classList.add("active");
+            evt.currentTarget.classList.add("active");
+        }
+    </script>
+</body>
+</html>

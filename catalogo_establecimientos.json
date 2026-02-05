@@ -1,0 +1,82 @@
+{
+  "redes": [
+    {
+      "nombre": "RED VENTANILLA",
+      "establecimientos": [
+        { "cod_pre": "06238", "nombre": "C.S. MARQUEZ" },
+        { "cod_pre": "06255", "nombre": "P.S. VENTANILLA ALTA" },
+        { "cod_pre": "06256", "nombre": "C.S. VILLA LOS REYES" },
+        { "cod_pre": "06257", "nombre": "P.S. ANGAMOS" },
+        { "cod_pre": "06258", "nombre": "P.S. VENTANILLA BAJA" },
+        { "cod_pre": "06259", "nombre": "P.S. VENTANILLA ESTE" },
+        { "cod_pre": "06260", "nombre": "C.S. MI PERU" },
+        { "cod_pre": "06261", "nombre": "P.S. LUIS FELIPE DE LAS CASAS" },
+        { "cod_pre": "06262", "nombre": "P.S. HIJOS DEL ALMIRANTE GRAU" },
+        { "cod_pre": "06263", "nombre": "P.S. SANTA ROSA DE PACHACUTEC" },
+        { "cod_pre": "06264", "nombre": "P.S. BAHIA BLANCA" },
+        { "cod_pre": "06266", "nombre": "P.S. 03 DE FEBRERO" },
+        { "cod_pre": "06267", "nombre": "P.S. CIUDAD PACHACUTEC" },
+        { "cod_pre": "06268", "nombre": "P.S. DEFENSORES DE LA PATRIA" },
+        { "cod_pre": "07314", "nombre": "C.S. PACHACUTEC PERU-COREA" }
+      ]
+    },
+    {
+      "nombre": "RED BONILLA",
+      "establecimientos": [
+        { "cod_pre": "06220", "nombre": "P.S. MANUEL BONILLA" },
+        { "cod_pre": "06221", "nombre": "C.S. ALBERTO BARTON" },
+        { "cod_pre": "06222", "nombre": "P.S. CALLAO" },
+        { "cod_pre": "06223", "nombre": "P.S. SANTA FE" },
+        { "cod_pre": "06224", "nombre": "P.S. JOSE BOTERIN" },
+        { "cod_pre": "06225", "nombre": "P.S. SAN JUAN BOSCO" },
+        { "cod_pre": "06226", "nombre": "P.S. PUERTO NUEVO" },
+        { "cod_pre": "06227", "nombre": "P.S. LA PUNTA" },
+        { "cod_pre": "06228", "nombre": "C.S. NESTOR GAMBETTA" },
+        { "cod_pre": "06230", "nombre": "C.S. ACAPULCO" },
+        { "cod_pre": "06231", "nombre": "P.S. RAMON CASTILLA" },
+        { "cod_pre": "06233", "nombre": "P.S. JUAN PABLO II" },
+        { "cod_pre": "06234", "nombre": "P.S. SANTA ROSA" },
+        { "cod_pre": "06235", "nombre": "P.S. MIGUEL GRAU" },
+        { "cod_pre": "25474", "nombre": "P.S. JOSE OLAYA" }
+      ]
+    },
+    {
+      "nombre": "RED BEPECA",
+      "establecimientos": [
+        { "cod_pre": "06239", "nombre": "C.S. SESQUICENTENARIO" },
+        { "cod_pre": "06240", "nombre": "P.S. PREVI" },
+        { "cod_pre": "06241", "nombre": "P.S. AEROPUERTO" },
+        { "cod_pre": "06242", "nombre": "P.S. PLAYA RIMAC" },
+        { "cod_pre": "06243", "nombre": "P.S. FAUCETT" },
+        { "cod_pre": "06244", "nombre": "P.S. 200 MILLAS" },
+        { "cod_pre": "06245", "nombre": "P.S. BOCANEGRA" },
+        { "cod_pre": "06246", "nombre": "P.S. ALAMO" },
+        { "cod_pre": "06248", "nombre": "P.S. POLIGONO IV" },
+        { "cod_pre": "06249", "nombre": "C.S. BELLAVISTA PERU COREA" },
+        { "cod_pre": "06250", "nombre": "P.S. ALTA MAR" },
+        { "cod_pre": "06251", "nombre": "P.S. LA PERLA" },
+        { "cod_pre": "06252", "nombre": "P.S. CARMEN DE LA LEGUA" },
+        { "cod_pre": "06253", "nombre": "P.S. VILLA SR. DE LOS MILAGROS" },
+        { "cod_pre": "06768", "nombre": "P.S. PALMERAS DE OQUENDO" }
+      ]
+    },
+    {
+      "nombre": "NO PERTENECE A NINGUNA RED",
+      "establecimientos": [
+        { "cod_pre": "06668", "nombre": "P.S. SANIDAD MARITIMA" },
+        { "cod_pre": "06669", "nombre": "C.S. SANIDAD AEREA INTERNACIONAL" },
+        { "cod_pre": "16110", "nombre": "ATENCION DOMICILIARIA AL ADULTO MAYOR" },
+        { "cod_pre": "20823", "nombre": "P.S.M.C. SARITA COLONIA" },
+        { "cod_pre": "26983", "nombre": "P.S.M.C. LA PERLA" },
+        { "cod_pre": "28102", "nombre": "SAMU CALLAO" },
+        { "cod_pre": "29132", "nombre": "P.S.M.C. CARMEN DE LA LEGUA - REYNOSO" },
+        { "cod_pre": "29381", "nombre": "P.S.M.C. MI PERU" },
+        { "cod_pre": "31271", "nombre": "P.S.M.C. UNIVERSITARIO CALLAO" },
+        { "cod_pre": "32158", "nombre": "P.S.M.C. VENTANILLA NORTE" },
+        { "cod_pre": "10261", "nombre": "P.S. NAVAL VENTANILLA" },
+        { "cod_pre": "30821", "nombre": "P.S. CONSULTORIO OCUPACIONAL DE LA UNIDAD" }
+      ]
+    }
+
+  ]
+}

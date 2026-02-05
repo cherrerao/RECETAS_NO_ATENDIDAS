@@ -1,0 +1,230 @@
+// ============================================================
+// CÓDIGO PARA GOOGLE APPS SCRIPT - GESTIÓN DE USUARIOS
+// ============================================================
+// Este código debe agregarse al Apps Script existente
+// URL: https://script.google.com/macros/s/AKfycbyfnKoP8tchlFwegSO17YVOfMB622-OFNcEXD7gPi3O6t-1BLrtzXERil4v7ORVOJ2v/exec
+
+// Modificar la función doGet existente para incluir acción getUsers
+function doGet(e) {
+  const params = e.parameter;
+  const action = params.action;
+  
+  if (action === 'getUsers') {
+    return obtenerUsuarios();
+  }
+  
+  return ContentService.createTextOutput(JSON.stringify({
+    status: 'error',
+    message: 'Acción no reconocida'
+  })).setMimeType(ContentService.MimeType.JSON);
+}
+
+// Modificar la función doPost existente para incluir acción createUser
+function doPost(e) {
+  try {
+    const data = JSON.parse(e.postData.contents);
+    
+    // Obtener usuarios vía POST
+    if (data.action === 'getUsers') {
+      return obtenerUsuarios();
+    }
+    
+    // Si es para crear usuario
+    if (data.action === 'createUser' && data.usuario) {
+      return crearUsuario(data.usuario);
+    }
+    
+    // Si es registro normal de recetas (código existente)
+    if (data.establecimiento && data.producto) {
+      const ss = SpreadsheetApp.openById('1wXQjHUAHEnfTde4xWJujv9xMQOmbGgzaI_27rRnUOQM');
+      const sheet = ss.getSheetByName('ENTRADAS');
+      
+      if (!sheet) {
+        return ContentService.createTextOutput(JSON.stringify({
+          status: 'error',
+          message: 'Hoja ENTRADAS no encontrada'
+        })).setMimeType(ContentService.MimeType.JSON);
+      }
+      
+      sheet.appendRow([
+        data.cod_pre || '',
+        data.establecimiento || '',
+        data.codigo_producto || '',
+        data.producto || '',
+        data.tipo_servicio || '',
+        data.cantidad_requerida || 0,
+        data.cantidad_disponible || 0,
+        data.demanda_no_satisfecha || 0,
+        data.porcentaje_cobertura || 0,
+        data.fecha_registro || '',
+        data.observaciones || '',
+        data.usuario_registra || '',
+        data.fecha_registro_sistema || new Date().toISOString()
+      ]);
+      
+      return ContentService.createTextOutput(JSON.stringify({
+        status: 'ok',
+        success: true
+      })).setMimeType(ContentService.MimeType.JSON);
+    }
+    
+    return ContentService.createTextOutput(JSON.stringify({
+      status: 'error',
+      message: 'Datos incompletos'
+    })).setMimeType(ContentService.MimeType.JSON);
+    
+  } catch (error) {
+    return ContentService.createTextOutput(JSON.stringify({
+      status: 'error',
+      message: error.toString()
+    })).setMimeType(ContentService.MimeType.JSON);
+  }
+}
+
+// ============================================================
+// FUNCIONES PARA GESTIÓN DE USUARIOS
+// ============================================================
+
+function obtenerUsuarios() {
+  try {
+    const ss = SpreadsheetApp.openById('1wXQjHUAHEnfTde4xWJujv9xMQOmbGgzaI_27rRnUOQM');
+    let sheet = ss.getSheetByName('USUARIOS');
+    
+    // Si no existe la hoja, crearla con encabezados
+    if (!sheet) {
+      sheet = ss.insertSheet('USUARIOS');
+      sheet.appendRow(['ID', 'Usuario', 'Contraseña (Hash)', 'Rol', 'Centro', 'Creado En', 'Activo']);
+      
+      // Agregar usuario admin por defecto si no existe
+      sheet.appendRow([
+        'usr_admin_001',
+        'admin',
+        'c63bc483', // Hash de "admin123" usando algoritmo del frontend
+        'admin',
+        'Administración',
+        new Date().toISOString(),
+        'TRUE'
+      ]);
+    }
+    
+    const data = sheet.getDataRange().getValues();
+    const headers = data[0];
+    const usuarios = [];
+
+    // Asegurar que el usuario admin existe y tiene el hash correcto de "admin123"
+    // Este hash corresponde al algoritmo simple (31*hash + char) usado en el frontend.
+    let adminEncontrado = false;
+    for (let i = 1; i < data.length; i++) {
+      const row = data[i];
+      if (row[1] === 'admin') {
+        adminEncontrado = true;
+        // Actualizar a hash correcto si es necesario
+        if (row[2] !== 'c63bc483') {
+          sheet.getRange(i + 1, 3).setValue('c63bc483');
+        }
+        break;
+      }
+    }
+    if (!adminEncontrado) {
+      sheet.appendRow([
+        'usr_admin_auto',
+        'admin',
+        'c63bc483',
+        'admin',
+        'Administración',
+        new Date().toISOString(),
+        'TRUE'
+      ]);
+      // Refrescar datos tras inserción
+      const newData = sheet.getDataRange().getValues();
+      data.splice(0, data.length, ...newData);
+    }
+    
+    // Convertir filas a objetos (saltar encabezado)
+    for (let i = 1; i < data.length; i++) {
+      const row = data[i];
+      usuarios.push({
+        id: row[0],
+        usuario: row[1],
+        contraseña: row[2],
+        rol: row[3],
+        centro: row[4],
+        creado_en: row[5],
+        activo: row[6] === 'TRUE' || row[6] === true
+      });
+    }
+    
+    return ContentService.createTextOutput(JSON.stringify({
+      success: true,
+      usuarios: usuarios
+    })).setMimeType(ContentService.MimeType.JSON);
+    
+  } catch (error) {
+    return ContentService.createTextOutput(JSON.stringify({
+      success: false,
+      error: error.toString()
+    })).setMimeType(ContentService.MimeType.JSON);
+  }
+}
+
+function crearUsuario(usuario) {
+  try {
+    const ss = SpreadsheetApp.openById('1wXQjHUAHEnfTde4xWJujv9xMQOmbGgzaI_27rRnUOQM');
+    let sheet = ss.getSheetByName('USUARIOS');
+    
+    // Si no existe la hoja, crearla
+    if (!sheet) {
+      sheet = ss.insertSheet('USUARIOS');
+      sheet.appendRow(['ID', 'Usuario', 'Contraseña (Hash)', 'Rol', 'Centro', 'Creado En', 'Activo']);
+    }
+    
+    // Verificar que el usuario no exista
+    const data = sheet.getDataRange().getValues();
+    for (let i = 1; i < data.length; i++) {
+      if (data[i][1] === usuario.usuario) {
+        return ContentService.createTextOutput(JSON.stringify({
+          success: false,
+          error: 'El usuario ya existe'
+        })).setMimeType(ContentService.MimeType.JSON);
+      }
+    }
+    
+    // Agregar nuevo usuario
+    sheet.appendRow([
+      usuario.id || '',
+      usuario.usuario || '',
+      usuario.contraseña || '',
+      usuario.rol || '',
+      usuario.centro || '',
+      usuario.creado_en || new Date().toISOString(),
+      usuario.activo !== false ? 'TRUE' : 'FALSE'
+    ]);
+    
+    return ContentService.createTextOutput(JSON.stringify({
+      status: 'ok',
+      success: true,
+      message: 'Usuario creado correctamente'
+    })).setMimeType(ContentService.MimeType.JSON);
+    
+  } catch (error) {
+    return ContentService.createTextOutput(JSON.stringify({
+      success: false,
+      error: error.toString()
+    })).setMimeType(ContentService.MimeType.JSON);
+  }
+}
+
+// ============================================================
+// INSTRUCCIONES DE IMPLEMENTACIÓN
+// ============================================================
+// 1. Abre tu Apps Script actual
+// 2. Copia y pega las funciones obtenerUsuarios() y crearUsuario()
+// 3. Modifica las funciones doGet() y doPost() existentes según este código
+// 4. Guarda y despliega una nueva versión
+// 5. La hoja USUARIOS se creará automáticamente con un admin por defecto:
+//    - Usuario: admin
+//    - Contraseña: admin123
+//
+// ESTRUCTURA DE LA HOJA USUARIOS:
+// ID | Usuario | Contraseña (Hash) | Rol | Centro | Creado En | Activo
+// usr_admin_001 | admin | 4dc7c9ec8f434394 | admin | Administración | 2026-01-13T... | TRUE

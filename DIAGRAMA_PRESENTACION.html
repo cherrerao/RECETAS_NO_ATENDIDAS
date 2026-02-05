@@ -1,0 +1,500 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Diagrama de Flujo - Recetas No Atendidas</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Arial, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+        
+        .container {
+            max-width: 1000px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 16px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            overflow: hidden;
+        }
+        
+        header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 50px 40px;
+            text-align: center;
+        }
+        
+        header h1 {
+            font-size: 3em;
+            margin-bottom: 15px;
+            font-weight: 700;
+        }
+        
+        header p {
+            font-size: 1.3em;
+            opacity: 0.95;
+        }
+        
+        .content {
+            padding: 50px 40px;
+        }
+        
+        /* FLUJO PRINCIPAL */
+        .main-flow {
+            display: flex;
+            flex-direction: column;
+            gap: 30px;
+            margin: 40px 0;
+        }
+        
+        .flow-item {
+            display: flex;
+            align-items: center;
+            gap: 30px;
+        }
+        
+        .flow-item:nth-child(odd) {
+            flex-direction: row;
+        }
+        
+        .flow-item:nth-child(even) {
+            flex-direction: row-reverse;
+        }
+        
+        .flow-icon {
+            font-size: 5em;
+            flex-shrink: 0;
+            text-align: center;
+            animation: float 3s ease-in-out infinite;
+        }
+        
+        .flow-item:nth-child(2) .flow-icon {
+            animation-delay: 0.3s;
+        }
+        
+        .flow-item:nth-child(3) .flow-icon {
+            animation-delay: 0.6s;
+        }
+        
+        .flow-item:nth-child(4) .flow-icon {
+            animation-delay: 0.9s;
+        }
+        
+        @keyframes float {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-15px); }
+        }
+        
+        .flow-text {
+            flex: 1;
+            background: #f8f9fa;
+            padding: 25px;
+            border-radius: 12px;
+            border-left: 5px solid #667eea;
+        }
+        
+        .flow-text h3 {
+            color: #333;
+            font-size: 1.6em;
+            margin-bottom: 10px;
+        }
+        
+        .flow-text p {
+            color: #666;
+            font-size: 1.1em;
+            line-height: 1.6;
+        }
+        
+        .arrow {
+            text-align: center;
+            font-size: 2.5em;
+            color: #667eea;
+            margin: 10px 0;
+        }
+        
+        /* SECCIÓN: ROLES */
+        .roles-section {
+            margin-top: 60px;
+            padding-top: 60px;
+            border-top: 3px solid #f0f0f0;
+        }
+        
+        .roles-title {
+            text-align: center;
+            font-size: 2.5em;
+            color: #333;
+            margin-bottom: 40px;
+        }
+        
+        .roles-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 30px;
+        }
+        
+        .role-card {
+            padding: 40px;
+            border-radius: 12px;
+            text-align: center;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+            transition: transform 0.3s, box-shadow 0.3s;
+        }
+        
+        .role-card:hover {
+            transform: translateY(-10px);
+            box-shadow: 0 8px 25px rgba(0,0,0,0.15);
+        }
+        
+        .role-card.admin {
+            background: linear-gradient(135deg, #ffd89b 0%, #ff9a56 100%);
+            color: white;
+        }
+        
+        .role-card.centro {
+            background: linear-gradient(135deg, #a8edea 0%, #fed6e3 100%);
+            color: white;
+        }
+        
+        .role-card h2 {
+            font-size: 2.5em;
+            margin-bottom: 10px;
+        }
+        
+        .role-card .icon {
+            font-size: 4em;
+            margin-bottom: 15px;
+        }
+        
+        .role-card p {
+            font-size: 1.1em;
+            margin-bottom: 20px;
+            font-weight: 500;
+        }
+        
+        .role-list {
+            text-align: left;
+            font-size: 1em;
+            line-height: 2;
+            font-weight: 400;
+        }
+        
+        .role-list li {
+            list-style: none;
+            padding-left: 30px;
+            position: relative;
+        }
+        
+        .role-list li:before {
+            content: "✓";
+            position: absolute;
+            left: 0;
+            font-weight: bold;
+            font-size: 1.3em;
+        }
+        
+        /* SECCIÓN: DATOS */
+        .data-section {
+            margin-top: 60px;
+            padding: 40px;
+            background: #f0f7ff;
+            border-radius: 12px;
+            border-left: 5px solid #667eea;
+        }
+        
+        .data-section h2 {
+            color: #667eea;
+            font-size: 2em;
+            margin-bottom: 30px;
+            text-align: center;
+        }
+        
+        .data-flow {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 20px;
+            align-items: center;
+        }
+        
+        .data-box {
+            background: white;
+            padding: 25px;
+            border-radius: 10px;
+            text-align: center;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.08);
+        }
+        
+        .data-box h3 {
+            color: #667eea;
+            font-size: 1.8em;
+            margin-bottom: 10px;
+        }
+        
+        .data-box p {
+            color: #666;
+            font-size: 0.95em;
+        }
+        
+        .data-arrow {
+            font-size: 2em;
+            color: #667eea;
+            text-align: center;
+        }
+        
+        /* BENEFICIOS */
+        .benefits-section {
+            margin-top: 60px;
+            padding-top: 60px;
+            border-top: 3px solid #f0f0f0;
+        }
+        
+        .benefits-title {
+            text-align: center;
+            font-size: 2.5em;
+            color: #333;
+            margin-bottom: 40px;
+        }
+        
+        .benefits-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 25px;
+        }
+        
+        .benefit {
+            padding: 30px;
+            background: white;
+            border-radius: 12px;
+            text-align: center;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.08);
+            border-top: 4px solid #28a745;
+        }
+        
+        .benefit-icon {
+            font-size: 3em;
+            margin-bottom: 15px;
+        }
+        
+        .benefit h3 {
+            color: #333;
+            font-size: 1.3em;
+            margin-bottom: 10px;
+        }
+        
+        .benefit p {
+            color: #666;
+            font-size: 0.95em;
+            line-height: 1.6;
+        }
+        
+        footer {
+            background: #f8f9fa;
+            padding: 40px;
+            text-align: center;
+            color: #666;
+            border-top: 1px solid #ddd;
+            font-size: 1.1em;
+        }
+        
+        @media (max-width: 768px) {
+            header h1 { font-size: 2em; }
+            .roles-grid { grid-template-columns: 1fr; }
+            .data-flow { grid-template-columns: 1fr; }
+            .benefits-grid { grid-template-columns: 1fr; }
+            .flow-item { flex-direction: column !important; }
+            .flow-item:nth-child(even) { flex-direction: column !important; }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>🏥 Recetas No Atendidas</h1>
+            <p>Sistema de Gestión para Centros de Salud</p>
+        </header>
+        
+        <div class="content">
+            <!-- FLUJO PRINCIPAL -->
+            <div class="main-flow">
+                <div class="flow-item">
+                    <div class="flow-icon">👨‍💼</div>
+                    <div class="flow-text">
+                        <h3>Paso 1: Admin Crea Usuarios</h3>
+                        <p>El administrador crea un usuario para cada centro de salud con sus credenciales</p>
+                    </div>
+                </div>
+                
+                <div class="arrow">⬇️</div>
+                
+                <div class="flow-item">
+                    <div class="flow-icon">🏥</div>
+                    <div class="flow-text">
+                        <h3>Paso 2: Centro Ingresa</h3>
+                        <p>El usuario del centro se autentica con sus credenciales en el sistema</p>
+                    </div>
+                </div>
+                
+                <div class="arrow">⬇️</div>
+                
+                <div class="flow-item">
+                    <div class="flow-icon">📝</div>
+                    <div class="flow-text">
+                        <h3>Paso 3: Registra Receta</h3>
+                        <p>Completa un formulario con los datos de la receta no atendida</p>
+                    </div>
+                </div>
+                
+                <div class="arrow">⬇️</div>
+                
+                <div class="flow-item">
+                    <div class="flow-icon">☁️</div>
+                    <div class="flow-text">
+                        <h3>Paso 4: Se Guarda</h3>
+                        <p>El registro se almacena automáticamente en la base de datos en la nube</p>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- SECCIÓN: ROLES -->
+            <div class="roles-section">
+                <h2 class="roles-title">👥 ¿Quién puede usar el sistema?</h2>
+                
+                <div class="roles-grid">
+                    <div class="role-card admin">
+                        <div class="icon">👨‍💼</div>
+                        <h2>ADMINISTRADOR</h2>
+                        <p>Persona encargada de gestionar</p>
+                        <ul class="role-list">
+                            <li>Crear usuarios por centro</li>
+                            <li>Ver TODOS los datos</li>
+                            <li>Gestionar accesos</li>
+                            <li>Usuario: admin</li>
+                        </ul>
+                    </div>
+                    
+                    <div class="role-card centro">
+                        <div class="icon">🏥</div>
+                        <h2>CENTRO DE SALUD</h2>
+                        <p>Persona del centro que registra</p>
+                        <ul class="role-list">
+                            <li>Registrar recetas</li>
+                            <li>Ver SUS recetas</li>
+                            <li>Buscar medicamentos</li>
+                            <li>Sin acceso a otros</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- SECCIÓN: QUÉ SE GUARDA -->
+            <div class="roles-section">
+                <h2 class="roles-title">📋 ¿Qué datos se guardan?</h2>
+                
+                <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 20px;">
+                    <div style="padding: 20px; background: #f0f7ff; border-radius: 12px; border-left: 5px solid #667eea;">
+                        <h3 style="color: #667eea; margin-bottom: 15px;">Datos de la Receta:</h3>
+                        <ul style="list-style: none; padding: 0; line-height: 2;">
+                            <li>✓ <strong>Centro de Salud</strong> - ¿De dónde viene?</li>
+                            <li>✓ <strong>Medicamento</strong> - ¿Cuál no se atendió?</li>
+                            <li>✓ <strong>Cantidad</strong> - ¿Cuántas unidades?</li>
+                            <li>✓ <strong>Motivo</strong> - ¿Por qué no se atendió?</li>
+                        </ul>
+                    </div>
+                    
+                    <div style="padding: 20px; background: #f0f7ff; border-radius: 12px; border-left: 5px solid #667eea;">
+                        <h3 style="color: #667eea; margin-bottom: 15px;">Información Adicional:</h3>
+                        <ul style="list-style: none; padding: 0; line-height: 2;">
+                            <li>✓ <strong>Tipo de Servicio</strong> - Ambulatoria, hospitalaria, etc</li>
+                            <li>✓ <strong>Fecha</strong> - Cuándo se registró</li>
+                            <li>✓ <strong>Código Medicamento</strong> - Código único del producto</li>
+                            <li>✓ <strong>Observaciones</strong> - Notas adicionales</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- SECCIÓN: DATOS -->
+            <div class="data-section">
+                <h2>📊 ¿Dónde se guardan los datos?</h2>
+                
+                <div class="data-flow">
+                    <div class="data-box">
+                        <h3>🖥️</h3>
+                        <p><strong>Navegador</strong><br>Tu computadora</p>
+                    </div>
+                    
+                    <div class="data-arrow">➡️</div>
+                    
+                    <div class="data-box">
+                        <h3>☁️</h3>
+                        <p><strong>Google Sheets</strong><br>La nube</p>
+                    </div>
+                </div>
+                
+                <p style="text-align: center; margin-top: 30px; color: #555; font-size: 1em;">
+                    Los datos se envían de forma automática y segura a Google Sheets
+                </p>
+            </div>
+            
+            <!-- SECCIÓN: BENEFICIOS -->
+            <div class="benefits-section">
+                <h2 class="benefits-title">✨ Beneficios del Sistema</h2>
+                
+                <div class="benefits-grid">
+                    <div class="benefit">
+                        <div class="benefit-icon">🔒</div>
+                        <h3>Seguro</h3>
+                        <p>Requiere login para acceder. Cada centro ve solo sus datos</p>
+                    </div>
+                    
+                    <div class="benefit">
+                        <div class="benefit-icon">⚡</div>
+                        <h3>Rápido</h3>
+                        <p>Registro instantáneo. Sin demoras ni papeleos</p>
+                    </div>
+                    
+                    <div class="benefit">
+                        <div class="benefit-icon">📱</div>
+                        <h3>Accesible</h3>
+                        <p>Funciona desde cualquier computadora con internet</p>
+                    </div>
+                    
+                    <div class="benefit">
+                        <div class="benefit-icon">📊</div>
+                        <h3>Reportes</h3>
+                        <p>Los datos se guardan para análisis y reportes</p>
+                    </div>
+                    
+                    <div class="benefit">
+                        <div class="benefit-icon">🔍</div>
+                        <h3>Búsqueda</h3>
+                        <p>Buscar y filtrar recetas fácilmente</p>
+                    </div>
+                    
+                    <div class="benefit">
+                        <div class="benefit-icon">♻️</div>
+                        <h3>Automático</h3>
+                        <p>Formateo y validación automática de datos</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <footer>
+            <p><strong>🏥 Sistema de Gestión de Recetas No Atendidas</strong></p>
+            <p style="margin-top: 15px; font-size: 0.95em;">
+                Una herramienta simple para registrar y gestionar recetas no atendidas en centros de salud
+            </p>
+        </footer>
+    </div>
+</body>
+</html>

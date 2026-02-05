@@ -1,0 +1,435 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Registro de Recetas No Atendidas</title>
+    <link rel="stylesheet" href="style.css">
+    <!-- Fuentes modernas -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600&family=Rajdhani:wght@400;600&display=swap" rel="stylesheet">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.17.4/xlsx.full.min.js"></script>
+    <script src="auth.js"></script>
+</head>
+<body>
+    <!-- Fondo visual animado (solo decorativo) -->
+    <div class="bg-visuals" aria-hidden="true">
+        <div class="blob blob-1"></div>
+        <div class="blob blob-2"></div>
+        <div class="blob blob-3"></div>
+        <div class="grid-lines"></div>
+    </div>
+    <!-- PANTALLA DE LOGIN -->
+    <div id="loginScreen" class="login-screen">
+        <div class="login-container">
+            <div class="login-card">
+                <h1>🔐 Acceso al Sistema</h1>
+                <p class="login-subtitle">Registro de Recetas No Atendidas</p>
+                
+                <form id="loginForm" class="login-form">
+                    <div class="form-group">
+                        <label for="tipoAcceso">🔐 Tipo de Acceso:</label>
+                        <select id="tipoAcceso" required autofocus>
+                            <option value="">Selecciona una opción</option>
+                            <option value="admin">👨‍💼 ADMINISTRADOR</option>
+                            <option value="centro">🏥 CENTRO DE SALUD</option>
+                        </select>
+                    </div>
+
+                    <div id="camposCentro" class="campos-centro-hidden">
+                        <div class="form-group form-group-relative">
+                            <label for="loginCentro">🏥 Selecciona tu Centro:</label>
+                            <input 
+                                type="text" 
+                                id="loginCentro" 
+                                placeholder="Escribe para buscar tu centro..." 
+                                autocomplete="off">
+                            <div id="sugerenciasCentrosLogin" class="sugerencias-list"></div>
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="loginUsuario">👤 Usuario:</label>
+                        <input type="text" id="loginUsuario" placeholder="Ingresa tu usuario" required>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="loginContraseña">🔑 Contraseña:</label>
+                        <input type="password" id="loginContraseña" placeholder="Ingresa tu contraseña" required>
+                    </div>
+
+                    <div id="loginError" class="error-message error-hidden"></div>
+
+                    <button type="submit" class="btn btn-primary btn-login">INGRESAR</button>
+                </form>
+
+                <!-- Sección de Demo Admin removida - Solo visible en admin -->
+            </div>
+        </div>
+    </div>
+
+    <!-- APLICACIÓN PRINCIPAL -->
+    <div id="appContainer" class="app-container app-hidden">
+        <div class="navbar">
+            <div class="navbar-left">
+                <h1 class="navbar-title">📋 Recetas No Atendidas</h1>
+                <span id="userInfo" class="user-info"></span>
+            </div>
+            <div class="navbar-right">
+                <button id="btnAdmin" class="btn btn-secondary btn-small">⚙️ Gestión de Usuarios</button>
+                <button id="btnLogout" class="btn btn-danger btn-small">Salir</button>
+            </div>
+        </div>
+
+        <div class="container">
+        <div class="header">
+            <h1>📋 Registro de Recetas No Atendidas</h1>
+            <p class="subtitle">Seguimiento de medicamentos y productos no atendidos por establecimiento</p>
+        </div>
+
+        <div class="content">
+            <!-- Formulario de Registro -->
+            <section class="form-section">
+                <h2>Registrar Nueva Receta No Atendida</h2>
+                <form id="formRegistro">
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="red">Red de Salud:</label>
+                            <select id="red" required onchange="actualizarEstablecimientos()">
+                                <option value="">-- Selecciona una RED --</option>
+                            </select>
+                            <div id="establecimientosStatus" class="catalogo-status">Cargando catálogo de establecimientos...</div>
+                            <div id="listaEstablecimientosMain" class="list-box" style="margin-top:8px; max-height:220px; overflow:auto; border:1px solid #e6e6e6; padding:8px; border-radius:6px; display:none; background:#fff;"></div>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="establecimiento">Establecimiento / Centro:</label>
+                            <div class="autocomplete-wrapper">
+                                <input type="text" id="establecimiento" placeholder="Selecciona o escribe para buscar un establecimiento" required autocomplete="off" list="establecimientosLista" />
+                                <datalist id="establecimientosLista"></datalist>
+                                <div id="sugerenciasEstablecimientosMain" class="sugerencias-list"></div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="producto">Producto / Medicamento:</label>
+                        <div class="autocomplete-wrapper">
+                            <input type="text" id="producto" placeholder="Ej: 001, Ibuprofeno, Anti... (código o descripción)" required autocomplete="off">
+                            <datalist id="productosLista"></datalist>
+                            <div id="sugerenciasProductos" class="sugerencias-list"></div>
+                        </div>
+                            <div id="catalogoStatus" class="catalogo-status">Cargando catálogo de medicamentos...</div>
+                        <!-- Selector de archivo eliminado: la aplicación carga automáticamente desde MEDICA_ACTUALIZADO.xlsx -->
+                    </div>
+
+                    <div class="form-group">
+                        <label for="tipo_servicio">Tipo de Servicio:</label>
+                        <div class="autocomplete-wrapper">
+                            <input type="text" id="tipo_servicio" placeholder="Ej: Consulta Externa, Emergencia... (escribe o selecciona)" required autocomplete="off">
+                            <datalist id="tiposServicioLista"></datalist>
+                            <div id="sugerenciasTipoServicio" class="sugerencias-list"></div>
+                        </div>
+                        <div id="tiposServicioStatus" class="catalogo-status">Cargando catálogo de tipos de servicio...</div>
+                    </div>
+
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="cantidad_requerida">Cantidad Requerida:</label>
+                            <input type="number" id="cantidad_requerida" placeholder="Ej: 30" required min="0">
+                        </div>
+
+                        <div class="form-group">
+                            <label for="cantidad_disponible">Cantidad Disponible:</label>
+                            <input type="number" id="cantidad_disponible" placeholder="Ej: 20" required min="0">
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="fecha_registro">Fecha de Registro:</label>
+                        <input type="date" id="fecha_registro" required>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="observaciones">Observaciones:</label>
+                        <textarea id="observaciones" placeholder="Notas adicionales..."></textarea>
+                    </div>
+
+                    <button type="submit" class="btn btn-primary">Registrar Receta</button>
+                </form>
+            </section>
+
+            <!-- Tabla de Registros -->
+            <section class="table-section">
+                <div class="section-header">
+                    <h2>Registros de Recetas No Atendidas</h2>
+                    <div class="controls">
+                        <input type="text" id="filtro_busqueda" placeholder="Buscar establecimiento o producto..." class="search-box">
+                        <button id="btnLimpiar" class="btn btn-secondary" style="display: none;" title="Solo disponible para administradores">Limpiar Datos</button>
+                        <button id="btnExportar" class="btn btn-secondary">📊 Descargar Excel</button>
+                    </div>
+                </div>
+
+                <div class="table-wrapper">
+                    <table id="tablaRegistros" class="tabla-registros">
+                        <thead>
+                            <tr>
+                                <th>#</th>
+                                <th>Establecimiento</th>
+                                <th>Producto</th>
+                                <th>Tipo de Servicio</th>
+                                <th>Requerida</th>
+                                <th>Disponible</th>
+                                <th>Demanda No Satisfecha</th>
+                                <th>% Cobertura</th>
+                                <th>Fecha</th>
+                                <th>Acciones</th>
+                            </tr>
+                        </thead>
+                        <tbody id="cuerpoTabla">
+                            <tr class="empty-state">
+                                <td colspan="10">No hay registros. Completa el formulario para comenzar.</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </section>
+
+            <!-- Estadísticas -->
+            <section class="stats-section" id="stats-section-admin">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+                    <h2 style="margin: 0;">Resumen General</h2>
+                    <button id="btnDescargarResumenExcel" class="btn btn-secondary" title="Descargar resumen en Excel">📊 Descargar Resumen Excel</button>
+                </div>
+                <div class="stats-grid">
+                    <div class="stat-card">
+                        <div class="stat-number" id="totalRegistros">0</div>
+                        <div class="stat-label">Total Registros</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-number" id="totalProductos">0</div>
+                        <div class="stat-label">Productos Distintos</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-number" id="totalEstablecimientos">0</div>
+                        <div class="stat-label">Establecimientos</div>
+                    </div>
+                    <div class="stat-card alert">
+                        <div class="stat-number" id="totalDemandaNoSatisfecha">0</div>
+                        <div class="stat-label">Total Demanda No Satisfecha</div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Productos Críticos -->
+            <section class="critical-section" id="critical-section-admin">
+                <h2>⚠️ Productos Críticos (Demanda No Satisfecha)</h2>
+                <div id="productosCriticos" class="critical-list">
+                    <p class="empty-state">Sin productos con demanda no satisfecha.</p>
+                </div>
+            </section>
+
+            <!-- Catálogo de Medicamentos -->
+            <section class="form-section" id="catalogo-medicamentos-section">
+                <h2>Catálogo de Medicamentos</h2>
+                <div class="search-bar">
+                    <input type="text" id="search-medicamentos" placeholder="Buscar por código o descripción...">
+                </div>
+                <div class="table-wrapper">
+                    <table id="medicamentos-table" class="tabla-registros">
+                        <thead>
+                            <tr>
+                                <th>Código</th>
+                                <th>Descripción</th>
+                                <th>Categoría</th>
+                            </tr>
+                        </thead>
+                        <tbody id="medicamentos-tbody">
+                            <tr class="empty-state"><td colspan="3">Catálogo vacío. Esperando carga de archivo...</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </section>
+        </div>
+
+        <!-- MODAL DE GESTIÓN DE USUARIOS -->
+        <div id="adminModal" class="modal modal-hidden">
+            <div class="modal-content modal-large">
+                <div class="modal-header">
+                    <h2>⚙️ Gestión de Usuarios</h2>
+                    <button class="btn-close" onclick="cerrarModalAdmin()">&times;</button>
+                </div>
+
+                <div class="modal-body">
+                    <!-- Botón de Resetear Sistema en admin -->
+                    <div style="text-align: right; margin-bottom: 15px; padding-bottom: 10px; border-bottom: 1px solid #e6e6e6;">
+                        <button type="button" onclick="resetearYRecarga()" style="background: #f0ad4e; border: none; padding: 8px 16px; border-radius: 4px; cursor: pointer; font-weight: 600; color: #333;">🔄 Resetear Sistema</button>
+                    </div>
+
+                    <!-- Pestaña de crear usuario -->
+                    <div class="admin-tabs">
+                        <button class="tab-btn active" onclick="cambiarTab('crear')">Crear Usuario</button>
+                        <button class="tab-btn" onclick="cambiarTab('listar')">Lista de Usuarios</button>
+                        <button class="tab-btn tab-btn-hidden" id="tabEditarBtn" onclick="cambiarTab('editar')">✏️ Editar Usuario</button>
+                    </div>
+
+                    <!-- Tab Crear Usuario -->
+                    <div id="tabCrear" class="tab-content active">
+                        <h3>Crear Nuevo Usuario</h3>
+                        <form id="formCrearUsuario" class="admin-form">
+                            <div class="form-group">
+                                <label for="newUsuario">Nombre de Usuario:</label>
+                                <input type="text" id="newUsuario" placeholder="Ej: centro_bellavista" required>
+                            </div>
+
+                            <div class="form-group">
+                                <label for="newContraseña">Contraseña:</label>
+                                <input type="password" id="newContraseña" placeholder="Mínimo 6 caracteres" required minlength="6">
+                            </div>
+
+                            <div class="form-group">
+                                <label for="newRol">Rol:</label>
+                                <select id="newRol" required>
+                                    <option value="">-- Selecciona un rol --</option>
+                                    <option value="usuario">Usuario (Centro)</option>
+                                    <option value="admin">Administrador</option>
+                                </select>
+                            </div>
+
+                            <div class="form-group">
+                                <label for="newRed">Red / Unidad:</label>
+                                <select id="newRed">
+                                    <option value="">-- Selecciona una RED --</option>
+                                </select>
+                                <label for="newCentro">Centro/Establecimiento:</label>
+                                <input 
+                                    type="text" 
+                                    id="newCentro" 
+                                    placeholder="Ej: Centro de Salud Bellavista" 
+                                    list="establecimientosList"
+                                    autocomplete="off"
+                                    required>
+                                <datalist id="establecimientosList"></datalist>
+                                <div id="sugerenciasEstablecimientos" class="sugerencias-list"></div>
+                                <small>⚠️ Solo se puede crear un usuario por centro</small>
+                                <div id="listaEstablecimientosAdmin" class="list-box" style="margin-top:8px; max-height:180px; overflow:auto; border:1px solid #e6e6e6; padding:8px; border-radius:6px; background:#fff;"></div>
+                            </div>
+
+                            <div id="crearError" class="error-message error-hidden"></div>
+                            <div id="crearSuccess" class="success-message success-hidden"></div>
+
+                            <button type="submit" class="btn btn-primary">Crear Usuario</button>
+                        </form>
+                    </div>
+
+                    <!-- Tab Listar Usuarios -->
+                    <div id="tabListar" class="tab-content tab-hidden">
+                        <h3>Usuarios del Sistema</h3>
+                        <div class="table-wrapper">
+                            <table id="tablaUsuarios" class="tabla-usuarios">
+                                <thead>
+                                    <tr>
+                                        <th>Usuario</th>
+                                        <th>Rol</th>
+                                        <th>Centro</th>
+                                        <th>Creado</th>
+                                        <th>Acciones</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="usuariosTableBody">
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                    <!-- Tab Editar Usuario -->
+                    <div id="tabEditar" class="tab-content tab-hidden">
+                        <h3>✏️ Editar Usuario</h3>
+                        <form id="formEditarUsuario" class="admin-form">
+                            <div class="form-group">
+                                <label for="editUsuarioActual">Usuario Actual (no editable):</label>
+                                <input type="text" id="editUsuarioActual" disabled>
+                            </div>
+
+                            <div class="form-group">
+                                <label for="editNuevoUsuario">Nuevo Nombre de Usuario (opcional):</label>
+                                <input type="text" id="editNuevoUsuario" placeholder="Dejar en blanco para no cambiar">
+                            </div>
+
+                            <div class="form-group">
+                                <label for="editNuevaContraseña">Nueva Contraseña (opcional):</label>
+                                <input type="password" id="editNuevaContraseña" placeholder="Dejar en blanco para no cambiar" minlength="6">
+                            </div>
+
+                            <div class="form-group">
+                                <label for="editRol">Rol:</label>
+                                <select id="editRol" required>
+                                    <option value="">-- Selecciona un rol --</option>
+                                    <option value="usuario">Usuario (Centro)</option>
+                                    <option value="admin">Administrador</option>
+                                </select>
+                            </div>
+
+                            <div class="form-group">
+                                <label for="editRed">Red / Unidad:</label>
+                                <select id="editRed">
+                                    <option value="">-- Selecciona una RED --</option>
+                                </select>
+                                <label for="editCentro">Centro/Establecimiento:</label>
+                                <input 
+                                    type="text" 
+                                    id="editCentro" 
+                                    placeholder="Centro asignado" 
+                                    list="establecimientosListEditar"
+                                    autocomplete="off"
+                                    required>
+                                <datalist id="establecimientosListEditar"></datalist>
+                                <div id="sugerenciasEstablecimientosEditar" class="sugerencias-list"></div>
+                                <div id="listaEstablecimientosEditarBox" class="list-box" style="margin-top:8px; max-height:180px; overflow:auto; border:1px solid #e6e6e6; padding:8px; border-radius:6px; background:#fff;"></div>
+                            </div>
+
+                            <div id="editarError" class="error-message error-hidden"></div>
+                            <div id="editarSuccess" class="success-message success-hidden"></div>
+
+                            <div style="display: flex; gap: 10px;">
+                                <button type="submit" class="btn btn-primary">Guardar Cambios</button>
+                                <button type="button" onclick="cancelarEdicionUsuario()" class="btn btn-secondary">Cancelar</button>
+                                <button type="button" onclick="eliminarUsuarioActual()" class="btn btn-danger">🗑️ Eliminar Usuario</button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL DE CONFIRMACIÓN DE RESETEO -->
+    <div id="resetConfirmModal" class="modal modal-hidden">
+        <div class="modal-content" style="max-width: 400px;">
+            <div class="modal-header">
+                <h2>⚠️ Confirmar Reseteo del Sistema</h2>
+                <button class="btn-close" onclick="cerrarModalResetConfirm()">&times;</button>
+            </div>
+            <div class="modal-body">
+                <p style="color: #d9534f; font-weight: 600; margin-bottom: 15px;">
+                    Esto eliminará TODOS los usuarios y datos del sistema. Esta acción no se puede deshacer.
+                </p>
+                <form id="formResetConfirm" onsubmit="confirmarReseteo(event)">
+                    <div class="form-group">
+                        <label for="resetPassword">Ingresa tu contraseña para confirmar:</label>
+                        <input type="password" id="resetPassword" placeholder="Tu contraseña" required>
+                    </div>
+                    <div id="resetError" class="error-message error-hidden"></div>
+                    <div style="display: flex; gap: 10px; justify-content: flex-end;">
+                        <button type="button" onclick="cerrarModalResetConfirm()" class="btn btn-secondary">Cancelar</button>
+                        <button type="submit" class="btn btn-danger">Resetear Sistema</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>

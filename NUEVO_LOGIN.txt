@@ -1,0 +1,161 @@
+════════════════════════════════════════════════════════════════
+NUEVO LOGIN CON SELECTOR DE CENTROS
+════════════════════════════════════════════════════════════════
+
+CAMBIOS IMPLEMENTADOS:
+======================
+
+✓ Pantalla de login mejorada con selector de centro
+✓ Cada centro ahora es visible en una lista
+✓ Los usuarios deben seleccionar su centro antes de ingresar
+✓ Validación que el usuario pertenece al centro seleccionado
+✓ Estilos mejorados para mejor UX
+
+
+NUEVO FLUJO DE LOGIN:
+=====================
+
+1. ABRE LA PÁGINA: index.html
+
+2. VES LA PANTALLA DE LOGIN CON:
+   
+   🏥 Selecciona tu Centro:
+   └─ [Dropdown con lista de centros disponibles]
+   
+   👤 Usuario:
+   └─ [Campo de texto]
+   
+   🔑 Contraseña:
+   └─ [Campo de contraseña]
+   
+   [Botón INGRESAR]
+
+3. CÓMO USAR:
+   
+   Paso 1: Haz clic en el dropdown "Selecciona tu Centro"
+           Verás una lista de centros disponibles
+   
+   Paso 2: Selecciona tu centro de la lista
+           Ejemplo: 🏥 Centro de Salud Bellavista
+   
+   Paso 3: Ingresa tu usuario
+           Ejemplo: bellavista
+   
+   Paso 4: Ingresa tu contraseña
+           Ejemplo: pass123
+   
+   Paso 5: Haz clic en "INGRESAR"
+
+
+PARA USUARIOS DE CENTRO:
+========================
+
+BELLAVISTA:
+1. Centro: 🏥 Centro de Salud Bellavista
+2. Usuario: bellavista
+3. Contraseña: pass123
+4. Clic: INGRESAR
+→ Verá SOLO datos de Bellavista
+
+CARMEN:
+1. Centro: 🏥 Centro de Salud Carmen de la Legua
+2. Usuario: carmen
+3. Contraseña: pass456
+4. Clic: INGRESAR
+→ Verá SOLO datos de Carmen
+
+CALLAO:
+1. Centro: 🏥 Centro de Salud Callao
+2. Usuario: callao
+3. Contraseña: pass789
+4. Clic: INGRESAR
+→ Verá SOLO datos de Callao
+
+
+PARA ADMINISTRADOR:
+===================
+
+ADMIN:
+1. Centro: 🏥 ADMINISTRACIÓN
+2. Usuario: admin
+3. Contraseña: admin123
+4. Clic: INGRESAR
+→ Verá TODOS los datos de TODOS los centros
+
+
+VALIDACIONES:
+=============
+
+✓ Debes seleccionar un centro
+✓ Debes ingresar usuario y contraseña
+✓ El usuario debe pertenecer al centro seleccionado
+✓ Si hay error, se muestra mensaje claro: "Usuario o contraseña incorrectos"
+
+
+EJEMPLO VISUAL:
+
+┌─────────────────────────────────────────────┐
+│                                             │
+│        🔐 Acceso al Sistema                 │
+│   Registro de Recetas No Atendidas          │
+│                                             │
+│ 🏥 Selecciona tu Centro:                    │
+│ ┌─────────────────────────────────────────┐ │
+│ │ -- Selecciona un centro --          ▼ │ │
+│ │ 🏥 Centro de Salud Bellavista           │ │
+│ │ 🏥 Centro de Salud Carmen...            │ │
+│ │ 🏥 Centro de Salud Callao               │ │
+│ │ 🏥 ADMINISTRACIÓN                       │ │
+│ └─────────────────────────────────────────┘ │
+│                                             │
+│ 👤 Usuario:                                 │
+│ ┌─────────────────────────────────────────┐ │
+│ │ bellavista                              │ │
+│ └─────────────────────────────────────────┘ │
+│                                             │
+│ 🔑 Contraseña:                              │
+│ ┌─────────────────────────────────────────┐ │
+│ │ ••••••••                                │ │
+│ └─────────────────────────────────────────┘ │
+│                                             │
+│        ┌──────────────────────────┐        │
+│        │       INGRESAR           │        │
+│        └──────────────────────────┘        │
+│                                             │
+│ Demo Admin:                                 │
+│ Centro: ADMINISTRACIÓN                      │
+│ Usuario: admin | Contraseña: admin123      │
+│                                             │
+└─────────────────────────────────────────────┘
+
+
+VENTAJAS DEL NUEVO LOGIN:
+==========================
+
+✓ Más intuitivo: ve qué centros están disponibles
+✓ Evita confusión: sabe a qué centro acceder
+✓ Más seguro: valida que el usuario pertenece al centro
+✓ Mejor UX: emojis y etiquetas claras
+✓ Accesibilidad: campos bien organizados
+
+
+PASOS PARA PROBAR:
+==================
+
+1. Asegúrate de haber creado usuarios con admin
+   (ver CREAR_USUARIO_CENTRO.txt)
+
+2. Abre index.html
+
+3. Deberías ver dropdown con centros disponibles
+
+4. Selecciona un centro
+
+5. Ingresa usuario y contraseña de ese centro
+
+6. ¡Ingresa exitosamente!
+
+
+════════════════════════════════════════════════════════════════
+LISTO: Login mejorado con selector de centros ✓
+════════════════════════════════════════════════════════════════

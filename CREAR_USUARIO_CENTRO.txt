@@ -1,0 +1,114 @@
+================================================
+GUÍA: CREAR Y USAR USUARIO DE CENTRO
+================================================
+
+PASO 1: LOGIN COMO ADMINISTRADOR
+==================================
+1. Abre: index.html
+2. Usuario: admin
+3. Contraseña: admin123
+4. Haz clic en "INGRESAR"
+
+PASO 2: ABRIR PANEL DE GESTIÓN DE USUARIOS
+===========================================
+1. Una vez dentro (como admin), verás un botón "⚙️ Gestión de Usuarios" en la esquina superior derecha
+2. Haz clic en ese botón
+3. Se abrirá un modal con dos pestañas
+
+PASO 3: CREAR UN USUARIO DE CENTRO
+===================================
+1. Asegúrate de estar en la pestaña "Crear Usuario"
+2. Completa los campos:
+
+   📝 NOMBRE DE USUARIO:
+      Ejemplo: bellavista_user
+      (Este es el usuario con el que ingresarás después)
+
+   🔐 CONTRASEÑA:
+      Ejemplo: clave123
+      (Mínimo 6 caracteres)
+
+   👤 ROL:
+      Selecciona: Usuario (Centro)
+      (NO selecciones Administrador)
+
+   🏥 CENTRO/ESTABLECIMIENTO:
+      Empieza a escribir el nombre del centro...
+      Ejemplo: "Centro de Salud Bellavista"
+      Verás sugerencias mientras escribes
+      (Selecciona una de la lista)
+
+3. Haz clic en "Crear Usuario"
+4. Deberías ver: ✓ Usuario "bellavista_user" creado exitosamente
+
+PASO 4: VERIFICAR QUE EL USUARIO FUE CREADO
+=============================================
+1. Cambia a la pestaña "Lista de Usuarios"
+2. Deberías ver tu nuevo usuario listado con:
+   - Nombre del usuario
+   - Rol: 🏥 Usuario
+   - Centro: Centro de Salud Bellavista
+   - Fecha de creación
+
+PASO 5: CERRAR SESIÓN
+=====================
+1. Haz clic en el botón "Salir" en la esquina superior derecha
+2. Confirma que deseas cerrar sesión
+3. Volverás a la pantalla de login
+
+PASO 6: INGRESA CON EL USUARIO DEL CENTRO
+===========================================
+1. En la pantalla de login, ingresa:
+
+   Usuario: bellavista_user
+   Contraseña: clave123
+
+2. Haz clic en "INGRESAR"
+
+PASO 7: VERIFICAR RESTRICCIONES
+================================
+Una vez dentro con el usuario del centro, deberías ver:
+
+✓ Tu nombre de usuario en la esquina (bellavista_user)
+✓ Tu rol mostrado: 🏥 Usuario de Centro
+✓ Tu centro mostrado: Centro de Salud Bellavista
+✓ El campo de "Red" deshabilitado (no puedes cambiar)
+✓ El campo de "Establecimiento" SOLO muestra tu centro
+✓ NO tienes botón "⚙️ Gestión de Usuarios" (solo admin lo ve)
+
+✓ En la tabla de registros, SOLO ves registros de tu centro
+✓ Las estadísticas (Resumen General) solo muestran tus datos
+
+PASO 8: REGISTRAR UNA RECETA
+=============================
+1. Completa el formulario de "Registrar Nueva Receta No Atendida"
+2. El "Establecimiento" estará pre-seleccionado a tu centro
+3. Llena los demás campos (Producto, Cantidad Requerida, etc.)
+4. Haz clic en "Registrar Receta"
+5. La receta se guardará para tu centro
+
+PASOS PARA VOLVER A ADMIN
+==========================
+1. Como usuario del centro, haz clic en "Salir"
+2. Login nuevamente como:
+   Usuario: admin
+   Contraseña: admin123
+3. Como admin, verás TODOS los datos de TODOS los centros
+
+================================================
+RESUMEN DE DIFERENCIAS
+================================================
+
+COMO ADMINISTRADOR:
+✓ Ves todos los centros
+✓ Puedes crear/eliminar usuarios
+✓ Ves datos de todos los establecimientos
+✓ Datos globales en estadísticas
+
+COMO USUARIO DE CENTRO:
+✓ Solo ves TU centro
+✓ Solo puedes registrar en TU centro
+✓ No puedes crear usuarios
+✓ Datos solo de tu centro en estadísticas
+
+================================================
