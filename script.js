@@ -2,7 +2,7 @@
 // CONSTANTES Y CONFIGURACIÓN
 // ====================================
 const STORAGE_KEY = 'recetas_no_atendidas';
-const MAX_SUGERENCIAS = 15;
+const MAX_SUGERENCIAS = null;
 const DEBOUNCE_DELAY = 300; // ms para búsquedas
 // URL del Web App de Apps Script (para integrarlo con AppSheet/Google Sheets)
 const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbxUwkO7SRqoiBRReI9a73nFzpZTUukmXmsrTJXukwv-VE8HtbDTW7z3QZa6acIYHqJx/exec';
@@ -962,40 +962,35 @@ const filtrarProductosDebounced = debounce(() => {
                    categoria.includes(busqueda);
         })
         .sort((a, b) => {
-            // Función para calcular relevancia de un medicamento
-            const calcularRelevancia = (med) => {
-                const codigo = (med.codigo || '').toLowerCase();
-                const descripcion = (med.descripcion || '').toLowerCase();
-                
-                let puntos = 0;
-                
-                // Mayor puntuación si coincide al inicio del código (coincidencia exacta o al principio)
-                if (codigo.startsWith(busqueda)) {
-                    puntos += 100;
-                } else if (codigo.includes(busqueda)) {
-                    puntos += 50;
-                }
-                
-                // Mayor puntuación si coincide al inicio de la descripción
-                if (descripcion.startsWith(busqueda)) {
-                    puntos += 80;
-                } else if (descripcion.includes(busqueda)) {
-                    puntos += 40;
-                }
-                
-                // Penalizar si solo aparece en categoría
-                if (puntos === 0) {
-                    puntos = 10;
-                }
-                
-                return puntos;
-            };
-            
-            return calcularRelevancia(b) - calcularRelevancia(a);
-        })
-        .slice(0, MAX_SUGERENCIAS);
+            const codigoA = (a.codigo || '').toLowerCase();
+            const descA = (a.descripcion || '').toLowerCase();
+            const codigoB = (b.codigo || '').toLowerCase();
+            const descB = (b.descripcion || '').toLowerCase();
 
-    if (resultados.length === 0) {
+            const startsA = descA.startsWith(busqueda) || codigoA.startsWith(busqueda);
+            const startsB = descB.startsWith(busqueda) || codigoB.startsWith(busqueda);
+            if (startsA !== startsB) return startsB - startsA;
+
+            const idxA = Math.min(
+                descA.includes(busqueda) ? descA.indexOf(busqueda) : Number.MAX_SAFE_INTEGER,
+                codigoA.includes(busqueda) ? codigoA.indexOf(busqueda) : Number.MAX_SAFE_INTEGER
+            );
+            const idxB = Math.min(
+                descB.includes(busqueda) ? descB.indexOf(busqueda) : Number.MAX_SAFE_INTEGER,
+                codigoB.includes(busqueda) ? codigoB.indexOf(busqueda) : Number.MAX_SAFE_INTEGER
+            );
+            if (idxA !== idxB) return idxA - idxB;
+
+            if (descA.length !== descB.length) return descA.length - descB.length;
+
+            return descA.localeCompare(descB) || codigoA.localeCompare(codigoB);
+        });
+
+    const resultadosFinales = (MAX_SUGERENCIAS && resultados.length > MAX_SUGERENCIAS)
+        ? resultados.slice(0, MAX_SUGERENCIAS)
+        : resultados;
+
+    if (resultadosFinales.length === 0) {
         sugerenciasDiv.innerHTML = '<div class="sugerencia-item" style="color: #999;">No se encontraron medicamentos</div>';
         sugerenciasDiv.classList.add('active');
         return;
@@ -1008,7 +1003,7 @@ const filtrarProductosDebounced = debounce(() => {
         return div.innerHTML;
     };
 
-    sugerenciasDiv.innerHTML = resultados.map(med => {
+    sugerenciasDiv.innerHTML = resultadosFinales.map(med => {
         const codigoEscapado = escaparHTML(med.codigo || '');
         const descripcionEscapada = escaparHTML(med.descripcion || '');
         const categoriaEscapada = escaparHTML(med.categoria || '');
