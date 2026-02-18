@@ -1393,6 +1393,63 @@ function calcularDemanda() {
     }
 }
 
+function normalizarTextoCatalogo(valor) {
+    if (valor === null || valor === undefined) return '';
+    let texto = valor.toString().trim().toUpperCase();
+    try {
+        texto = texto.normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+    } catch (e) {}
+    return texto.replace(/\s+/g, ' ').trim();
+}
+
+function codigosCoinciden(codigoA, codigoB) {
+    const a = (codigoA || '').toString().trim();
+    const b = (codigoB || '').toString().trim();
+    if (!a || !b) return false;
+
+    if (/^\d+$/.test(a) && /^\d+$/.test(b)) {
+        return parseInt(a, 10) === parseInt(b, 10);
+    }
+
+    return normalizarTextoCatalogo(a) === normalizarTextoCatalogo(b);
+}
+
+function esProductoCatalogoValido(productoIngresado) {
+    const valor = (productoIngresado || '').toString().trim();
+    const catalogo = Array.isArray(CATALOGO_MEDICAMENTOS.unicos) ? CATALOGO_MEDICAMENTOS.unicos : [];
+
+    if (!valor || catalogo.length === 0) return false;
+
+    const formatoConCodigo = valor.match(/^\[(.+?)\]\s*(.+)$/);
+    if (formatoConCodigo) {
+        const codigoInput = formatoConCodigo[1].trim();
+        const descripcionInput = formatoConCodigo[2].trim();
+        return catalogo.some(med => {
+            const codigoMed = (med.codigo || '').toString().trim();
+            const descripcionMed = (med.descripcion || '').toString().trim();
+            return codigosCoinciden(codigoInput, codigoMed) &&
+                normalizarTextoCatalogo(descripcionInput) === normalizarTextoCatalogo(descripcionMed);
+        });
+    }
+
+    const valorNormalizado = normalizarTextoCatalogo(valor);
+    return catalogo.some(med => {
+        const codigoMed = (med.codigo || '').toString().trim();
+        const descripcionMed = (med.descripcion || '').toString().trim();
+        return valorNormalizado === normalizarTextoCatalogo(descripcionMed) ||
+            valorNormalizado === normalizarTextoCatalogo(codigoMed);
+    });
+}
+
+function esTipoServicioCatalogoValido(tipoServicioIngresado) {
+    const valorNormalizado = normalizarTextoCatalogo(tipoServicioIngresado);
+    if (!valorNormalizado || !Array.isArray(CATALOGO_TIPOS_SERVICIO) || CATALOGO_TIPOS_SERVICIO.length === 0) {
+        return false;
+    }
+
+    return CATALOGO_TIPOS_SERVICIO.some(tipo => normalizarTextoCatalogo(tipo) === valorNormalizado);
+}
+
 // Validar formulario de registro
 function validarFormularioRegistro() {
     const establecimiento = DOMCache.get('establecimiento')?.value.trim();
@@ -1410,10 +1467,14 @@ function validarFormularioRegistro() {
 
     if (!producto || producto.length < 3) {
         errores.push('Debes ingresar un producto válido');
+    } else if (!esProductoCatalogoValido(producto)) {
+        errores.push('Debes seleccionar un producto existente del catálogo');
     }
 
     if (!tipoServicio || tipoServicio.length < 2) {
         errores.push('Debes ingresar o seleccionar un tipo de servicio');
+    } else if (!esTipoServicioCatalogoValido(tipoServicio)) {
+        errores.push('Debes seleccionar un tipo de servicio existente del catálogo');
     }
 
     if (isNaN(cantidadRequerida) || cantidadRequerida < 0) {
