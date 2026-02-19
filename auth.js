@@ -179,8 +179,10 @@ class AutenticacionSistema {
     // Login
     login(usuario, contraseña) {
         const usuarios = this.obtenerTodosLosUsuarios();
+        const usuarioIngresado = String(usuario || '').trim();
+        const usuarioNormalizado = usuarioIngresado.toLowerCase();
         console.log('📝 INTENTO DE LOGIN');
-        console.log('  Usuario ingresado:', usuario);
+        console.log('  Usuario ingresado:', usuarioIngresado);
         console.log('  Contraseña ingresada:', contraseña);
         console.log('  Total usuarios en BD:', usuarios.length);
         
@@ -195,11 +197,20 @@ class AutenticacionSistema {
         
         // Buscar usuario
         const usuarioEncontrado = usuarios.find(u => {
-            const usuarioCoincide = String(u.usuario) === usuario;
-            const contraseñaCoincide = String(u.contraseña) === String(contraseñaHash);
-            const estaActivo = u.activo === true;
+            const usuarioBD = String(u.usuario || '').trim().toLowerCase();
+            const usuarioCoincide = usuarioBD === usuarioNormalizado;
+            const contraseñaGuardada = String(u.contraseña || '').trim();
+            const contraseñaCoincide = contraseñaGuardada === String(contraseñaHash) || contraseñaGuardada === String(contraseña || '');
+            const activoRaw = u.activo;
+            const estaActivo = (
+                activoRaw === true ||
+                activoRaw === 1 ||
+                String(activoRaw || '').trim().toUpperCase() === 'TRUE' ||
+                String(activoRaw || '').trim() === '1' ||
+                String(activoRaw || '').trim().toUpperCase() === 'SI'
+            );
             
-            console.log(`  Comparando "${usuario}": usuario=${usuarioCoincide}, contraseña=${contraseñaCoincide}, activo=${estaActivo}`);
+            console.log(`  Comparando "${usuarioIngresado}": usuario=${usuarioCoincide}, contraseña=${contraseñaCoincide}, activo=${estaActivo}`);
             
             return usuarioCoincide && contraseñaCoincide && estaActivo;
         });
@@ -222,7 +233,7 @@ class AutenticacionSistema {
 
         localStorage.setItem(SESSION_KEY, JSON.stringify(this.usuarioActual));
         console.log('  ✓ Sesión guardada en localStorage');
-        console.log(`  ✓✓✓ LOGIN EXITOSO para usuario: ${usuario}`);
+        console.log(`  ✓✓✓ LOGIN EXITOSO para usuario: ${usuarioIngresado}`);
         
         return this.usuarioActual;
     }

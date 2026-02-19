@@ -86,13 +86,10 @@ document.addEventListener('DOMContentLoaded', async () => {
         cargarMedicamentosDesdeJSON(),
         cargarTiposServicioDesdeExcel()
     ]).then(() => {
-        // Refrescar centros en pantalla de login (si visible)
-        try { cargarCentrosEnLogin(); } catch {}
         inicializarAplicacion();
     }).catch(error => {
         console.error("Error al cargar catálogos:", error);
         mostrarNotificacion('Error al cargar algunos catálogos. Verifica la consola.', 'warning');
-        try { cargarCentrosEnLogin(); } catch {}
         inicializarAplicacion();
     });
 });
@@ -2879,9 +2876,6 @@ function mostrarPantallaLogin() {
     if (loginScreen) loginScreen.classList.remove('login-hidden');
     if (appContainer) appContainer.classList.add('app-hidden');
     
-    // Cargar centros disponibles
-    cargarCentrosEnLogin();
-    
     // Event listener para el formulario de login
     const loginForm = DOMCache.get('loginForm');
     if (loginForm) {
@@ -2890,192 +2884,21 @@ function mostrarPantallaLogin() {
             realizarLogin();
         });
     }
-    
-    // Event listener para tipo de acceso
-    const tipoAcceso = DOMCache.get('tipoAcceso');
-    if (tipoAcceso) {
-        tipoAcceso.addEventListener('change', cambiarTipoAcceso);
-    }
-    
-    // Event listeners para autocomplete de centros en login
-    const inputCentro = DOMCache.get('loginCentro');
-    const sugerenciasCentros = DOMCache.get('sugerenciasCentrosLogin');
-    
-    if (inputCentro && sugerenciasCentros) {
-        inputCentro.addEventListener('keyup', filtrarCentrosLogin);
-        inputCentro.addEventListener('focus', mostrarTodosCentrosLogin);
-        
-        document.addEventListener('click', (e) => {
-            if (!inputCentro.contains(e.target) && !sugerenciasCentros.contains(e.target)) {
-                sugerenciasCentros.classList.remove('active');
-            }
-        });
-    }
-}
-
-// Cambiar tipo de acceso (Administrador o Centro)
-function cambiarTipoAcceso() {
-    const tipoAcceso = DOMCache.get('tipoAcceso');
-    const camposCentro = DOMCache.get('camposCentro');
-    const loginCentro = DOMCache.get('loginCentro');
-    const loginUsuario = DOMCache.get('loginUsuario');
-    
-    if (!tipoAcceso || !camposCentro || !loginCentro) return;
-    
-    const valor = tipoAcceso.value;
-    
-    if (valor === 'admin') {
-        // Modo administrador
-        camposCentro.classList.add('campos-centro-hidden');
-        loginCentro.value = 'ADMINISTRACIÓN';
-        loginCentro.required = false;
-        if (loginUsuario) loginUsuario.focus();
-        console.log('Modo: ADMINISTRADOR');
-    } else if (valor === 'centro') {
-        // Modo centro
-        camposCentro.classList.remove('campos-centro-hidden');
-        loginCentro.value = '';
-        loginCentro.required = true;
-        loginCentro.focus();
-        console.log('Modo: CENTRO');
-    } else {
-        // Sin selección
-        camposCentro.classList.add('campos-centro-hidden');
-        loginCentro.value = '';
-        loginCentro.required = false;
-    }
-}
-
-// Cargar centros disponibles en el autocomplete del login
-function cargarCentrosEnLogin() {
-    // Obtener centros de usuarios registrados
-    const usuarios = auth.obtenerTodosLosUsuarios();
-    const centrosDeUsuarios = [...new Set(usuarios.map(u => u.centro))];
-    
-    // Extraer todos los establecimientos del catálogo
-    let centrosCatalogo = [];
-    if (CATALOGO_ESTABLECIMIENTOS.redes && Array.isArray(CATALOGO_ESTABLECIMIENTOS.redes)) {
-        centrosCatalogo = CATALOGO_ESTABLECIMIENTOS.redes.flatMap(red => (red.establecimientos || []).map(e => (typeof e === 'string') ? e : (e.nombre || '')));
-    }
-    
-    // Combinar con centros de usuarios registrados
-    let centrosUnicos = Array.from(new Set([...centrosDeUsuarios, ...centrosCatalogo]));
-    centrosUnicos.sort();
-    
-    // NO agregar ADMINISTRACIÓN a la lista (se maneja por separado en tipo de acceso)
-    centrosUnicos = centrosUnicos.filter(c => c !== 'ADMINISTRACIÓN');
-    
-    // Guardar como variable global para filtrado
-    window.CENTROS_DISPONIBLES = centrosUnicos;
-    
-    console.log('Centros disponibles en login:', centrosUnicos);
-    console.log('CATALOGO_ESTABLECIMIENTOS.redes:', CATALOGO_ESTABLECIMIENTOS.redes ? CATALOGO_ESTABLECIMIENTOS.redes.length : 0, 'redes');
-}
-
-// Mostrar todos los centros cuando se enfoca el campo
-function mostrarTodosCentrosLogin() {
-    const inputCentro = document.getElementById('loginCentro');
-    const sugerenciasCentros = document.getElementById('sugerenciasCentrosLogin');
-    
-    if (!inputCentro || !sugerenciasCentros || !window.CENTROS_DISPONIBLES) return;
-    
-    // Si el campo está vacío, mostrar todos los centros (hasta 10)
-    if (inputCentro.value.length === 0) {
-        sugerenciasCentros.innerHTML = window.CENTROS_DISPONIBLES.slice(0, 10).map(centro => 
-            `<div class="sugerencia-item" onclick="seleccionarCentroLogin('${centro.replace(/'/g, "\\'")}')" style="cursor: pointer;">
-                <span style="color: #007bff;">🏥</span> ${centro}
-            </div>`
-        ).join('');
-        sugerenciasCentros.style.display = 'block';
-    }
-}
-
-// Filtrar centros mientras se escribe
-function filtrarCentrosLogin() {
-    const inputCentro = document.getElementById('loginCentro');
-    const sugerenciasCentros = document.getElementById('sugerenciasCentrosLogin');
-    
-    if (!inputCentro || !sugerenciasCentros || !window.CENTROS_DISPONIBLES) return;
-    
-    const valor = inputCentro.value.toLowerCase().trim();
-    
-    if (valor.length === 0) {
-        sugerenciasCentros.innerHTML = '';
-        sugerenciasCentros.style.display = 'none';
-        return;
-    }
-    
-    // Filtrar centros disponibles
-    const centrosFiltrados = window.CENTROS_DISPONIBLES.filter(centro => 
-        centro.toLowerCase().includes(valor)
-    );
-    
-    if (centrosFiltrados.length === 0) {
-        sugerenciasCentros.innerHTML = '<div class="sugerencia-item no-resultado">❌ No se encontraron centros</div>';
-        sugerenciasCentros.style.display = 'block';
-        return;
-    }
-    
-    // Mostrar hasta 10 sugerencias
-    sugerenciasCentros.innerHTML = centrosFiltrados.slice(0, 10).map(centro => 
-        `<div class="sugerencia-item" onclick="seleccionarCentroLogin('${centro.replace(/'/g, "\\'")}')" style="cursor: pointer;">
-            <span style="color: #007bff;">🏥</span> ${centro}
-        </div>`
-    ).join('');
-    
-    sugerenciasCentros.style.display = 'block';
-}
-
-// Seleccionar centro de las sugerencias
-function seleccionarCentroLogin(centro) {
-    const inputCentro = document.getElementById('loginCentro');
-    const sugerenciasCentros = document.getElementById('sugerenciasCentrosLogin');
-    
-    inputCentro.value = centro;
-    sugerenciasCentros.innerHTML = '';
-    sugerenciasCentros.style.display = 'none';
-    
-    console.log('Centro seleccionado:', centro);
-    
-    // Mover foco al campo de usuario
-    setTimeout(() => {
-        document.getElementById('loginUsuario').focus();
-    }, 50);
 }
 
 // Realizar login
 async function realizarLogin() {
-    const tipoAcceso = DOMCache.get('tipoAcceso');
-    const loginCentro = DOMCache.get('loginCentro');
     const loginUsuario = DOMCache.get('loginUsuario');
     const loginContraseña = DOMCache.get('loginContraseña');
     const errorDiv = DOMCache.get('loginError');
     const loginForm = DOMCache.get('loginForm');
 
-    if (!tipoAcceso || !loginUsuario || !loginContraseña || !errorDiv) return;
+    if (!loginUsuario || !loginContraseña || !errorDiv) return;
 
-    const tipoAccesoValor = tipoAcceso.value;
-    const centro = loginCentro ? loginCentro.value.trim() : '';
     const usuario = loginUsuario.value.trim();
     const contraseña = loginContraseña.value;
 
-    console.log('📝 Intentando login - Tipo:', tipoAccesoValor, 'Centro:', centro, 'Usuario:', usuario);
-
-    // Validar que se seleccionó tipo de acceso
-    if (!tipoAccesoValor) {
-        errorDiv.textContent = '❌ Debes seleccionar un tipo de acceso';
-        errorDiv.classList.remove('error-hidden');
-        tipoAcceso.focus();
-        return;
-    }
-
-    // Validar que se seleccionó centro (solo para centros)
-    if (tipoAccesoValor === 'centro' && !centro) {
-        errorDiv.textContent = '❌ Debes seleccionar un centro';
-        errorDiv.classList.remove('error-hidden');
-        if (loginCentro) loginCentro.focus();
-        return;
-    }
+    console.log('📝 Intentando login - Usuario:', usuario);
 
     try {
         // Asegurar usuarios cargados desde Google Sheets
@@ -3096,57 +2919,16 @@ async function realizarLogin() {
             console.warn('Usando admin local de fallback para permitir acceso.');
         }
 
-        // Primero verificar el usuario antes de hacer login para validar tipo de acceso
-        const usuarios = auth.obtenerTodosLosUsuarios();
-        console.log('🔍 DEBUG LOGIN - Usuarios cargados:', JSON.stringify(usuarios));
-        console.log('🔍 DEBUG LOGIN - Buscando usuario:', usuario);
-        const usuarioEncontrado = usuarios.find(u => u.usuario === usuario && u.activo === true);
-        
-        if (!usuarioEncontrado) {
-            throw new Error('Usuario o contraseña incorrectos');
-        }
-        
-        // VALIDACIÓN CRÍTICA: Verificar que el tipo de acceso coincide con el rol del usuario
-        if (tipoAccesoValor === 'admin' && usuarioEncontrado.rol !== 'admin') {
-            errorDiv.textContent = '❌ Este usuario no es administrador. Debes seleccionar "CENTRO DE SALUD" como tipo de acceso.';
-            errorDiv.classList.remove('error-hidden');
-            if (loginContraseña) loginContraseña.value = '';
-            return;
-        }
-        
-        if (tipoAccesoValor === 'centro' && usuarioEncontrado.rol === 'admin') {
-            errorDiv.textContent = '❌ Los administradores deben usar "ADMINISTRADOR" como tipo de acceso.';
-            errorDiv.classList.remove('error-hidden');
-            if (loginContraseña) loginContraseña.value = '';
-            return;
-        }
-        
-        // Ahora intentar login (solo si pasó las validaciones anteriores)
+        // Autenticar solo con usuario y contraseña
         const usuarioAutenticado = auth.login(usuario, contraseña);
         
         console.log('Usuario autenticado:', usuarioAutenticado.usuario, 'Centro:', usuarioAutenticado.centro, 'Rol:', usuarioAutenticado.rol);
-        console.log('Centro seleccionado en formulario:', centro);
-        console.log('Tipo de acceso seleccionado:', tipoAccesoValor);
-        
-        // Validar que el usuario pertenece al centro seleccionado (solo para no-admin)
-        if (usuarioAutenticado.rol !== 'admin' && usuarioAutenticado.centro !== centro) {
-            console.error(`Mismatch: usuario pertenece a "${usuarioAutenticado.centro}" pero seleccionó "${centro}"`);
-            throw new Error(`El usuario "${usuario}" pertenece al centro "${usuarioAutenticado.centro}", pero seleccionaste "${centro}". Por favor, selecciona el centro correcto.`);
-        }
-        
-        // Validación adicional: asegurar que admin solo puede entrar con tipo "admin"
-        if (usuarioAutenticado.rol === 'admin' && tipoAccesoValor !== 'admin') {
-            auth.logout(); // Cerrar sesión si se logró hacer login incorrectamente
-            throw new Error('Los administradores deben seleccionar "ADMINISTRADOR" como tipo de acceso.');
-        }
 
         // Limpiar formulario y ocultar error
         if (loginForm) loginForm.reset();
-        if (tipoAcceso) tipoAcceso.value = '';
-        if (loginCentro) loginCentro.value = '';
         errorDiv.classList.add('error-hidden');
         
-        console.log('✓✓✓ Login exitoso para:', usuario, 'en centro:', usuarioAutenticado.centro);
+        console.log('✓✓✓ Login exitoso para:', usuario, 'rol:', usuarioAutenticado.rol);
         
         // Mostrar aplicación
         mostrarAplicacion();
@@ -3649,6 +3431,48 @@ function obtenerTodosLosEstablecimientos() {
     return establecimientos.sort();
 }
 
+function obtenerEstablecimientosPorRedConCod(redNombre) {
+    const salida = [];
+
+    if (Array.isArray(CATALOGO_ESTABLECIMIENTOS.datos_raw) && CATALOGO_ESTABLECIMIENTOS.datos_raw.length > 0) {
+        const redes = redNombre
+            ? CATALOGO_ESTABLECIMIENTOS.datos_raw.filter(r => r && r.nombre === redNombre)
+            : CATALOGO_ESTABLECIMIENTOS.datos_raw;
+
+        redes.forEach(red => {
+            if (red && Array.isArray(red.establecimientos)) {
+                red.establecimientos.forEach(est => {
+                    const nombre = typeof est === 'string' ? est : (est?.nombre || '');
+                    const cod_pre = typeof est === 'string' ? '' : (est?.cod_pre || '');
+                    if (nombre) salida.push({ nombre, cod_pre: cod_pre ? String(cod_pre).trim() : '' });
+                });
+            }
+        });
+    }
+
+    if (salida.length === 0) {
+        const lista = redNombre
+            ? (CATALOGO_ESTABLECIMIENTOS.redes.find(r => r.nombre === redNombre)?.establecimientos || [])
+            : obtenerTodosLosEstablecimientos();
+
+        lista.forEach(nombre => {
+            if (nombre) salida.push({ nombre, cod_pre: '' });
+        });
+    }
+
+    const vistos = new Set();
+    const unicos = [];
+    salida.forEach(item => {
+        const key = (item.nombre || '').toUpperCase().trim();
+        if (key && !vistos.has(key)) {
+            vistos.add(key);
+            unicos.push(item);
+        }
+    });
+
+    return unicos.sort((a, b) => a.nombre.localeCompare(b.nombre));
+}
+
 // Renderizar lista visible de establecimientos en un contenedor
 function renderListaEstablecimientos(redNombre, containerId) {
     const container = document.getElementById(containerId);
@@ -3692,6 +3516,7 @@ function handleClickListaEstablecimiento(event, establecimiento, containerId) {
 // Filtrar y mostrar sugerencias de establecimientos en el formulario de crear usuario
 function filtrarEstablecimientosAdmin() {
     const inputCentro = document.getElementById('newCentro');
+    if (!inputCentro) return;
     const busqueda = inputCentro.value.toLowerCase().trim();
     const sugerenciasDiv = document.getElementById('sugerenciasEstablecimientos');
     const datalist = document.getElementById('establecimientosList');
@@ -3705,16 +3530,14 @@ function filtrarEstablecimientosAdmin() {
 
     // Obtener establecimientos según la red seleccionada en el formulario de creación
     const selectedRed = document.getElementById('newRed') ? document.getElementById('newRed').value : '';
-    let todosEstablecimientos = [];
-    if (selectedRed) {
-        const redObj = CATALOGO_ESTABLECIMIENTOS.redes.find(r => r.nombre === selectedRed);
-        todosEstablecimientos = redObj && Array.isArray(redObj.establecimientos) ? redObj.establecimientos : [];
-    } else {
-        todosEstablecimientos = obtenerTodosLosEstablecimientos();
-    }
+    const todosEstablecimientos = obtenerEstablecimientosPorRedConCod(selectedRed || null);
 
-    // Filtrar establecimientos que coincidan con la búsqueda
-    const resultados = todosEstablecimientos.filter(est => est.toLowerCase().includes(busqueda)).slice(0, 20);
+    // Filtrar por nombre o COD PRE
+    const resultados = todosEstablecimientos.filter(est => {
+        const nombre = (est.nombre || '').toLowerCase();
+        const codigo = (est.cod_pre || '').toLowerCase();
+        return nombre.includes(busqueda) || codigo.includes(busqueda);
+    }).slice(0, 20);
 
     if (resultados.length === 0) {
         sugerenciasDiv.innerHTML = '<div class="sugerencia-item" style="color: #999;">No se encontraron establecimientos</div>';
@@ -3725,15 +3548,15 @@ function filtrarEstablecimientosAdmin() {
 
     // Mostrar sugerencias visibles
     sugerenciasDiv.innerHTML = resultados.map(est => `
-        <div class="sugerencia-item" onclick="seleccionarEstablecimiento('${est.replace(/'/g, "\\'")}')">
-            <div class="sugerencia-descripcion">🏥 ${est}</div>
+        <div class="sugerencia-item" onclick="seleccionarEstablecimiento('${est.nombre.replace(/'/g, "\\'")}')">
+            <div class="sugerencia-descripcion">🏥 ${est.cod_pre ? `[${est.cod_pre}] ` : ''}${est.nombre}</div>
         </div>
     `).join('');
     sugerenciasDiv.classList.add('active');
 
     // Llenar datalist para navegación con teclado
     datalist.innerHTML = resultados.map(est => `
-        <option value="${est}"></option>
+        <option value="${est.nombre}"></option>
     `).join('');
 }
 
@@ -3746,13 +3569,7 @@ function mostrarTodosEstablecimientosAdmin() {
     if (!inputCentro || !sugerenciasDiv || !datalist) return;
 
     const selectedRed = document.getElementById('newRed') ? document.getElementById('newRed').value : '';
-    let lista = [];
-    if (selectedRed) {
-        const redObj = CATALOGO_ESTABLECIMIENTOS.redes.find(r => r.nombre === selectedRed);
-        lista = redObj && Array.isArray(redObj.establecimientos) ? redObj.establecimientos : [];
-    } else {
-        lista = obtenerTodosLosEstablecimientos();
-    }
+    const lista = obtenerEstablecimientosPorRedConCod(selectedRed || null);
 
     if (!lista || lista.length === 0) {
         sugerenciasDiv.innerHTML = '<div class="sugerencia-item" style="color:#999;">No hay establecimientos disponibles</div>';
@@ -3764,14 +3581,14 @@ function mostrarTodosEstablecimientosAdmin() {
     // Mostrar hasta 50 sugerencias
     const toShow = lista.slice(0, 50);
     sugerenciasDiv.innerHTML = toShow.map(est => `
-        <div class="sugerencia-item" onclick="seleccionarEstablecimiento('${est.replace(/'/g, "\\'")}')">
-            <div class="sugerencia-descripcion">🏥 ${est}</div>
+        <div class="sugerencia-item" onclick="seleccionarEstablecimiento('${est.nombre.replace(/'/g, "\\'")}')">
+            <div class="sugerencia-descripcion">🏥 ${est.cod_pre ? `[${est.cod_pre}] ` : ''}${est.nombre}</div>
         </div>
     `).join('');
     sugerenciasDiv.classList.add('active');
 
     // Llenar datalist para navegación con teclado
-    datalist.innerHTML = toShow.map(est => `<option value="${est}"></option>`).join('');
+    datalist.innerHTML = toShow.map(est => `<option value="${est.nombre}"></option>`).join('');
 }
 
 // Seleccionar un establecimiento de las sugerencias
@@ -4018,13 +3835,7 @@ function filtrarEstablecimientosEditarAdmin() {
     
     const valor = inputCentro.value.toLowerCase().trim();
     const selectedRed = document.getElementById('editRed') ? document.getElementById('editRed').value : '';
-    let todosEstablecimientos = [];
-    if (selectedRed) {
-        const redObj = CATALOGO_ESTABLECIMIENTOS.redes.find(r => r.nombre === selectedRed);
-        todosEstablecimientos = redObj && Array.isArray(redObj.establecimientos) ? redObj.establecimientos : [];
-    } else {
-        todosEstablecimientos = obtenerTodosLosEstablecimientos();
-    }
+    const todosEstablecimientos = obtenerEstablecimientosPorRedConCod(selectedRed || null);
     
     if (valor.length === 0) {
         sugerencias.innerHTML = '';
@@ -4032,8 +3843,11 @@ function filtrarEstablecimientosEditarAdmin() {
         return;
     }
     
-    const filtrados = todosEstablecimientos.filter(e => 
-        e.toLowerCase().includes(valor)
+    const filtrados = todosEstablecimientos.filter(est => {
+        const nombre = (est.nombre || '').toLowerCase();
+        const codigo = (est.cod_pre || '').toLowerCase();
+        return nombre.includes(valor) || codigo.includes(valor);
+    }
     );
     
     if (filtrados.length === 0) {
@@ -4043,8 +3857,8 @@ function filtrarEstablecimientosEditarAdmin() {
     }
     
     sugerencias.innerHTML = filtrados.slice(0, 8).map(est => 
-        `<div class="sugerencia-item" onclick="seleccionarEstablecimientoEditar('${est.replace(/'/g, "\\'")}')" style="cursor: pointer;">
-            <span style="color: #28a745;">🏥</span> ${est}
+        `<div class="sugerencia-item" onclick="seleccionarEstablecimientoEditar('${est.nombre.replace(/'/g, "\\'")}')" style="cursor: pointer;">
+            <span style="color: #28a745;">🏥</span> ${est.cod_pre ? `[${est.cod_pre}] ` : ''}${est.nombre}
         </div>`
     ).join('');
     
@@ -4060,13 +3874,7 @@ function mostrarTodosEstablecimientosEditar() {
     if (!inputCentro || !sugerencias || !datalist) return;
 
     const selectedRed = document.getElementById('editRed') ? document.getElementById('editRed').value : '';
-    let lista = [];
-    if (selectedRed) {
-        const redObj = CATALOGO_ESTABLECIMIENTOS.redes.find(r => r.nombre === selectedRed);
-        lista = redObj && Array.isArray(redObj.establecimientos) ? redObj.establecimientos : [];
-    } else {
-        lista = obtenerTodosLosEstablecimientos();
-    }
+    const lista = obtenerEstablecimientosPorRedConCod(selectedRed || null);
 
     if (!lista || lista.length === 0) {
         sugerencias.innerHTML = '<div class="sugerencia-item" style="color:#999;">No hay establecimientos disponibles</div>';
@@ -4077,12 +3885,12 @@ function mostrarTodosEstablecimientosEditar() {
 
     const toShow = lista.slice(0, 50);
     sugerencias.innerHTML = toShow.map(est => `
-        <div class="sugerencia-item" onclick="seleccionarEstablecimientoEditar('${est.replace(/'/g, "\\'")}')" style="cursor: pointer;">
-            <span style="color: #28a745;">🏥</span> ${est}
+        <div class="sugerencia-item" onclick="seleccionarEstablecimientoEditar('${est.nombre.replace(/'/g, "\\'")}')" style="cursor: pointer;">
+            <span style="color: #28a745;">🏥</span> ${est.cod_pre ? `[${est.cod_pre}] ` : ''}${est.nombre}
         </div>
     `).join('');
     sugerencias.style.display = 'block';
-    datalist.innerHTML = toShow.map(est => `<option value="${est}"></option>`).join('');
+    datalist.innerHTML = toShow.map(est => `<option value="${est.nombre}"></option>`).join('');
 }
 
 // Seleccionar establecimiento para edición

@@ -61,6 +61,15 @@
       ]
     },
     {
+      "nombre": "HOSPITALES",
+      "establecimientos": [
+        { "cod_pre": "07126F01", "nombre": "HOSP HOSPITAL DE VENTANILLA - Farmacia" },
+        { "cod_pre": "06219F01", "nombre": "HOSP HOSPITAL SAN JOSE - Farmacia" },
+        { "cod_pre": "06218F01", "nombre": "HOSP NAC. DANIEL A. CARRION - Farmacia" },
+        { "cod_pre": "17883", "nombre": "HOSPITAL DE REHABILITACION DEL CALLAO" }
+      ]
+    },
+    {
       "nombre": "NO PERTENECE A NINGUNA RED",
       "establecimientos": [
         { "cod_pre": "06668", "nombre": "P.S. SANIDAD MARITIMA" },
