@@ -1393,7 +1393,7 @@ function calcularDemanda() {
     }
 }
 
-async function limpiarFormulario() {
+/*async function limpiarFormulario() {
 const form = document.getElementById('formRegistro');
 if (!form) return;
 form.reset(); // resetea inputs
@@ -1405,7 +1405,7 @@ if (DOMCache.sugerenciasTipoServicio) { DOMCache.sugerenciasTipoServicio.innerHT
 const sugerenciasMain = document.getElementById('sugerenciasEstablecimientosMain');
 if (sugerenciasMain) { sugerenciasMain.innerHTML = ''; sugerenciasMain.classList.remove('active'); }
 mostrarNotificacion && mostrarNotificacion('Campos del formulario limpiados', 'info');
-}
+}*/
 
 function normalizarTextoCatalogo(valor) {
     if (valor === null || valor === undefined) return '';
