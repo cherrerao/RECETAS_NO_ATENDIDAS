@@ -1393,19 +1393,37 @@ function calcularDemanda() {
     }
 }
 
-/*async function limpiarFormulario() {
-const form = document.getElementById('formRegistro');
-if (!form) return;
-form.reset(); // resetea inputs
-// volver a establecer fecha hoy (porque el input fecha es readonly)
-establecerFechaHoy();
-// limpiar sugerencias / datalists si aplica
-if (DOMCache.sugerenciasProductos) { DOMCache.sugerenciasProductos.innerHTML = ''; DOMCache.sugerenciasProductos.classList.remove('active'); }
-if (DOMCache.sugerenciasTipoServicio) { DOMCache.sugerenciasTipoServicio.innerHTML = ''; DOMCache.sugerenciasTipoServicio.classList.remove('active'); }
-const sugerenciasMain = document.getElementById('sugerenciasEstablecimientosMain');
-if (sugerenciasMain) { sugerenciasMain.innerHTML = ''; sugerenciasMain.classList.remove('active'); }
-mostrarNotificacion && mostrarNotificacion('Campos del formulario limpiados', 'info');
-}*/
+async function limpiarFormulario() {
+    const producto = DOMCache.producto || document.getElementById('producto');
+    const tipoServicio = DOMCache.tipoServicio || document.getElementById('tipo_servicio');
+    const cantidadRequerida = document.getElementById('cantidad_requerida');
+    const cantidadDisponible = document.getElementById('cantidad_disponible');
+    const observaciones = document.getElementById('observaciones');
+
+    if (producto) producto.value = '';
+    if (tipoServicio) tipoServicio.value = '';
+    if (cantidadRequerida) cantidadRequerida.value = '';
+    if (cantidadDisponible) cantidadDisponible.value = '';
+    if (observaciones) observaciones.value = '';
+
+    if (DOMCache.sugerenciasProductos) {
+        DOMCache.sugerenciasProductos.innerHTML = '';
+        DOMCache.sugerenciasProductos.classList.remove('active');
+    }
+
+    if (DOMCache.sugerenciasTipoServicio) {
+        DOMCache.sugerenciasTipoServicio.innerHTML = '';
+        DOMCache.sugerenciasTipoServicio.classList.remove('active');
+    }
+
+    const sugerenciasMain = document.getElementById('sugerenciasEstablecimientosMain');
+    if (sugerenciasMain) {
+        sugerenciasMain.innerHTML = '';
+        sugerenciasMain.classList.remove('active');
+    }
+
+    mostrarNotificacion && mostrarNotificacion('Campos del formulario limpiados', 'info');
+}
 
 function normalizarTextoCatalogo(valor) {
     if (valor === null || valor === undefined) return '';
