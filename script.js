@@ -1317,7 +1317,10 @@ function agregarEventListeners() {
     const filtroBusqueda = DOMCache.filtroBusqueda;
     const cantidadRequerida = DOMCache.get('cantidad_requerida');
     const cantidadDisponible = DOMCache.get('cantidad_disponible');
-
+    const btnResetForm = document.getElementById('btnResetForm');
+    
+    if (btnResetForm) { btnResetForm.addEventListener('click', limpiarFormulario); }
+    
     if (formRegistro) {
         formRegistro.addEventListener('submit', agregarRegistro);
     }
@@ -1388,6 +1391,20 @@ function calcularDemanda() {
         const cobertura = ((disponible / requerida) * 100).toFixed(2);
         console.log(`Demanda no satisfecha: ${demandaNoSatisfecha} (Cobertura: ${cobertura}%)`);
     }
+}
+
+async function limpiarFormulario() {
+const form = document.getElementById('formRegistro');
+if (!form) return;
+form.reset(); // resetea inputs
+// volver a establecer fecha hoy (porque el input fecha es readonly)
+establecerFechaHoy();
+// limpiar sugerencias / datalists si aplica
+if (DOMCache.sugerenciasProductos) { DOMCache.sugerenciasProductos.innerHTML = ''; DOMCache.sugerenciasProductos.classList.remove('active'); }
+if (DOMCache.sugerenciasTipoServicio) { DOMCache.sugerenciasTipoServicio.innerHTML = ''; DOMCache.sugerenciasTipoServicio.classList.remove('active'); }
+const sugerenciasMain = document.getElementById('sugerenciasEstablecimientosMain');
+if (sugerenciasMain) { sugerenciasMain.innerHTML = ''; sugerenciasMain.classList.remove('active'); }
+mostrarNotificacion && mostrarNotificacion('Campos del formulario limpiados', 'info');
 }
 
 function normalizarTextoCatalogo(valor) {
