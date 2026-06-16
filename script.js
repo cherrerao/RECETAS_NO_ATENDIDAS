@@ -1509,8 +1509,8 @@ function validarFormularioRegistro() {
         errores.push('Debes seleccionar un tipo de servicio existente del catálogo');
     }
 
-    if (isNaN(cantidadRequerida) || cantidadRequerida < 0) {
-        errores.push('La cantidad requerida debe ser un número válido mayor o igual a 0');
+    if (isNaN(cantidadRequerida) || cantidadRequerida < 1) {
+        errores.push('La cantidad requerida debe ser un número válido mayor a 0');
     }
 
     if (isNaN(cantidadDisponible) || cantidadDisponible < 0) {
